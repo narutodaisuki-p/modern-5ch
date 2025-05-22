@@ -3,10 +3,13 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container } from '@mui/material';
-import ThreadList from './components/ThreadList';
-import Thread from './components/Thread';
-import CreateThread from './components/CreateThread';
-import Header from './components/Header';
+import ThreadList from './components/threads/ThreadList';
+import Thread from './components/threads/Thread';
+import CreateThread from './components/threads/CreateThread';
+import Header from './components/common/Header';
+import CategoryList from './components/categories/CategoryList';
+import { AppProvider } from './context/Appcontext';
+
 
 const theme = createTheme({
   palette: {
@@ -39,16 +42,19 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Header />
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-          <Routes>
-            <Route path="/" element={<ThreadList />} />
-            <Route path="/thread/:threadId" element={<Thread />} />
-            <Route path="/create" element={<CreateThread />} />
-          </Routes>
-        </Container>
-      </Router>
+      <AppProvider>
+        <Router>
+          <Header />
+          <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Routes>
+              <Route path="/thread/:threadId" element={<Thread />} />
+              <Route path="/create" element={<CreateThread />} />
+              <Route path="/" element={<CategoryList />} />
+              <Route path="/category/:categoryId" element={<ThreadList />} />
+            </Routes>
+          </Container>
+        </Router>
+      </AppProvider>
     </ThemeProvider>
   );
 }

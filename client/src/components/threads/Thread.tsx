@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography, Paper, Divider, TextField, Button } from '@mui/material';
+import {fetchPosts } from '../../api/apiClinet'; // APIから投稿を取得する関数をインポート
+import {useAppContext  } from '../../context/Appcontext'; // コンテキストをインポート
+
 
 interface Post {
   id: number;
@@ -12,14 +15,13 @@ const Thread: React.FC = () => {
   const { threadId } = useParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
+  const { setLoading, setError } = useAppContext(); // コンテキストから関数を取得
+
 
   useEffect(() => {
-    // TODO: スレッドの投稿を取得する処理を実装
-    // 仮のデータを設定
-    setPosts([
-      { id: 1, content: '1番目の投稿です', createdAt: new Date().toISOString() },
-      { id: 2, content: '2番目の投稿です', createdAt: new Date().toISOString() },
-    ]);
+    if (!threadId) return;
+
+    fetchPosts(threadId, setPosts, setLoading, setError); // 投稿を取得する関数を呼び出す
   }, [threadId]);
 
   const handleSubmit = (e: React.FormEvent) => {  const handleSubmit = async (e: React.FormEvent) => {
