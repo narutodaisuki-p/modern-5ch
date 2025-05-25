@@ -1,28 +1,63 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Typography, TextField, Button, Paper } from '@mui/material';
-import { useAppContext } from '../../context/Appcontext'; // 修正済み
-import { useParams } from 'react-router-dom';
-import Loading from '../common/Loading'; // 修正済み
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Box, Typography, TextField, Button, Paper, MenuItem, CircularProgress } from '@mui/material';
+import { useAppContext } from '../../context/Appcontext';
+import Loading from '../common/Loading';
+import { getCategories } from '../../api/apiClinet'; // APIからカテゴリを取得する関数をインポート
+const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+interface Category {
+  _id: string;
+  name: string;
+}
 
 const CreateThread: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const defaultCategory = id || 'general';
+
+  const { loading, setLoading, error, setError } = useAppContext();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const { loading, setLoading, error, setError } = useAppContext(); // 修正済み
-  const { threadId } = useParams(); // 修正済み
+  const [categories, setCategories] = useState<Category[] | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>(defaultCategory);
+  useEffect(() => {
+  const fetchCategories = async () => {
+    await getCategories(setCategories, setLoading, setError);
+    console.log('カテゴリを取得しました:', categories);
+  };
+  fetchCategories();
+}, []);
+
+  const handleRetry = () => {
+    setCategories(null);
+    getCategories(setCategories, setLoading, setError);
+  };
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!title.trim() || !content.trim()) {
       setError('タイトルと内容を入力してください。');
       return;
     }
 
     setLoading(true);
-    setError(null); // エラーをリセット
+    try {
+      await axios.post(`${URL}/api/threads`, {
+        title,
+        content,
+        category: selectedCategory,
+      });
+      navigate(`/categories/${selectedCategory}`);
+    } catch (err) {
+      console.error('スレッド作成失敗:', err);
+      setError('スレッドの作成に失敗しました。');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,9 +67,14 @@ const CreateThread: React.FC = () => {
       </Typography>
       {loading && <Loading />}
       {error && (
-        <Typography color="error" variant="body1" gutterBottom>
-          {error}
-        </Typography>
+        <Box sx={{ mb: 2 }}>
+          <Typography color="error">{error}</Typography>
+          {categories === null && (
+            <Button onClick={handleRetry} variant="outlined" sx={{ mt: 1 }}>
+              再試行
+            </Button>
+          )}
+        </Box>
       )}
 
       <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
@@ -59,41 +99,38 @@ const CreateThread: React.FC = () => {
           required
           variant="outlined"
         />
-        {/*  カテゴリーの選択 */}
+
         <TextField
+          select
           fullWidth
           label="カテゴリー"
-          select
-          SelectProps={{
-            native: true,
-          }}
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
           margin="normal"
           variant="outlined"
+          disabled={!categories || loading}
         >
-          <option value="general">一般</option>
-          <option value="news">ニュース</option>
-          <option value="tech">技術</option>
-          <option value="other">その他</option>
+          {!categories ? (
+            <MenuItem value="" disabled>
+              読み込み中...
+            </MenuItem>
+          ) : (
+            categories.map((cat) => (
+                <MenuItem key={cat._id} value={cat._id}>
+                  {cat.name}
+                </MenuItem>
+            ))
+          )}
         </TextField>
-        
 
         <Box sx={{ mt: 2 }}>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            size="large"
-          >
+          <Button type="submit" variant="outlined" size="large" onClick={handleSubmit}>
             スレッドを作成
           </Button>
-          
-          <Button
-            variant="text"
-            onClick={() => navigate('/')}
-            sx={{ ml: 2 }}
-          >
+          <Button variant="text" onClick={() => navigate('/categories')} sx={{ ml: 2 }}>
             キャンセル
           </Button>
+        
         </Box>
       </Paper>
     </Box>

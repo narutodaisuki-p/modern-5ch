@@ -6,7 +6,7 @@ import { useAppContext } from '../../context/Appcontext';
 import { useParams } from 'react-router-dom';
 
 interface Thread {
-  id: number;
+  _id: string;
   title: string;
   createdAt: string;
 }
@@ -14,7 +14,7 @@ interface Thread {
 const ThreadList: React.FC = () => {
   const [threads, setThreads] = useState<Thread[]>([]);
   const { loading, setLoading, error, setError } = useAppContext();
-  const { threadId } = useParams();
+
   
   useEffect(() => {
     setLoading(true);
@@ -38,24 +38,38 @@ const ThreadList: React.FC = () => {
         <Button
           component={Link}
           to="/create"
-          variant="contained"
+          variant="outlined"
           color="primary"
         >
           新規スレッド作成
         </Button>
       </Box>
-
       <List>
         {threads.map((thread) => (
-          <Paper key={thread.id} sx={{ mb: 2 }}>
+          <Paper key={thread._id} sx={{ mb: 2 }}>
             <ListItem
               component={Link}
-              to={`/thread/${thread.id}`}
-              sx={{ textDecoration: 'none' }}
+              to={`/thread/${thread._id}`}
+              sx={{ textDecoration: 'none' ,
+                color: 'text.primary',
+                '&:hover': {
+                  backgroundColor: 'rgba(144, 202, 159, 0.1)',
+                  color: 'primary.main',
+                },
+              }}
             >
               <ListItemText
                 primary={thread.title}
                 secondary={new Date(thread.createdAt).toLocaleString()}
+                sx={{
+                    '& .MuiTypography-root': {
+        color: 'text.primary', // タイトルの色
+      },
+      '& .MuiTypography-body2': {
+        color: 'text.secondary', // 日付の色
+      },
+
+                }}
               />
             </ListItem>
           </Paper>

@@ -9,7 +9,9 @@ interface Post {
   id: number;
   content: string;
   createdAt: string;
+  number: number;
 }
+
 
 const Thread: React.FC = () => {
   const { threadId } = useParams();
@@ -17,32 +19,28 @@ const Thread: React.FC = () => {
   const [newPost, setNewPost] = useState('');
   const { setLoading, setError } = useAppContext(); // コンテキストから関数を取得
 
-
+  
   useEffect(() => {
     if (!threadId) return;
 
     fetchPosts(threadId, setPosts, setLoading, setError); // 投稿を取得する関数を呼び出す
   }, [threadId]);
 
-  const handleSubmit = (e: React.FormEvent) => {  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.trim()) return;
   
-    const post: Post = {
-      id: posts.length + 1, // 仮のID
-      content: newPost,
-      createdAt: new Date().toISOString(),
-    };
-  
+
     try {
       // サーバーに投稿を送信
-      const response = await fetch('http://localhost:5000/api/posts', {
+      const response = await fetch(`http://localhost:5000/api/threads/${threadId}/posts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ threadId, ...post }),
+        body: JSON.stringify({ threadId,content: newPost }),
       });
   
       if (!response.ok) {
+        console.error('投稿の送信に失敗:', response);
         throw new Error('投稿の送信に失敗しました');
       }
   
@@ -53,18 +51,6 @@ const Thread: React.FC = () => {
       console.error(error);
       alert('投稿の送信に失敗しました');
     }
-  };
-    e.preventDefault();
-    if (!newPost.trim()) return;
-
-    // TODO: 新しい投稿を送信する処理を実装
-    const post: Post = {
-      id: posts.length + 1,
-      content: newPost,
-      createdAt: new Date().toISOString(),
-    };
-    setPosts([...posts, post]);
-    setNewPost('');
   };
 
   return (
@@ -77,7 +63,7 @@ const Thread: React.FC = () => {
         {posts.map((post) => (
           <Paper key={post.id} sx={{ p: 2, mb: 2 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              {post.id}. {new Date(post.createdAt).toLocaleString()}
+              {post.number}. {new Date(post.createdAt).toLocaleString()}
             </Typography>
             <Typography variant="body1">{post.content}</Typography>
           </Paper>
@@ -95,9 +81,9 @@ const Thread: React.FC = () => {
           variant="outlined"
           sx={{ mb: 2 }}
         />
-        <Button type="submit" variant="contained" color="primary">
+        <Button type="submit" variant="outlined" color="primary" onClick={handleSubmit}>
           投稿する
-        </Button>
+        </Button> 
       </Paper>
     </Box>
   );

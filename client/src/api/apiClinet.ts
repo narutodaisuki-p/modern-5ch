@@ -1,5 +1,13 @@
 import axios from 'axios';
-const API_URL = 'http://localhost:5000'; // APIのURLを指定
+import { set } from 'mongoose';
+const API_URL = process.env.API_URL || 'http://localhost:5000'; // APIのURLを指定
+
+
+interface Thread {
+  id: number;
+  title: string;
+  createdAt: string;
+}
 
 
 
@@ -19,7 +27,7 @@ export const createThread = (title: string, content: string, setLoading: (loadin
     });
 };
 
-export const fetchThreads = (setThreads: (threads: any[]) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
+export const fetchThreads = (setThreads: (threads: Thread[]) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
   setLoading(true);
   axios.get(`${API_URL}/api/threads`)
     .then((response) => {
@@ -47,3 +55,14 @@ export const fetchPosts = (threadId: string, setPosts: (posts: any[]) => void, s
       setLoading(false);
     });
 }
+export const getCategories = async (setCategories:  (categories: any) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
+  setLoading(true);
+  try {
+    const response = await axios.get(`${API_URL}/api/categories`);
+    setCategories(response.data);
+  } catch (error) {
+    setError('カテゴリの取得に失敗しました。もう一度お試しください。');
+  } finally {
+    setLoading(false);
+  }
+};

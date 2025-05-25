@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -9,16 +8,22 @@ import CreateThread from './components/threads/CreateThread';
 import Header from './components/common/Header';
 import CategoryList from './components/categories/CategoryList';
 import { AppProvider } from './context/Appcontext';
+import Category from './components/categories/Category';
 
 
 const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#90caf9',
+      main: '#90ca9f', // 明るい緑色
+      contrastText: '#fff', // 白色
+    },
+    text: {
+      primary: '#f5f5f5',
+      secondary: '#b0bec5', // 明るいグレー
     },
     secondary: {
-      main: '#f48fb1',
+      main: '#757575',
     },
     background: {
       default: '#121212',
@@ -49,8 +54,11 @@ function App() {
             <Routes>
               <Route path="/thread/:threadId" element={<Thread />} />
               <Route path="/create" element={<CreateThread />} />
-              <Route path="/" element={<CategoryList />} />
-              <Route path="/category/:categoryId" element={<ThreadList />} />
+              <Route path="/categories" element={<CategoryList />} />
+              <Route path="/" element={<ThreadList />} />
+              <Route path="/categories/:categoryId" element={<Category />} />
+
+
             </Routes>
           </Container>
         </Router>

@@ -1,10 +1,13 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import { useAppContext } from '../../context/Appcontext';
+
 
 const Header: React.FC = () => {
+  const { category } = useAppContext();
   return (
-    <AppBar position="static" sx={{ mb: 2 }}>
+    <AppBar position="static" sx={{ mb: 2,width: '100%' }}>
       <Toolbar>
         <Typography
           variant="h6"
@@ -21,7 +24,7 @@ const Header: React.FC = () => {
         </Typography>
         <Box>
           <Button
-            color="inherit"
+            color="primary"
             component={RouterLink}
             to="/create"
             sx={{ fontWeight: 'bold' }}
@@ -29,6 +32,11 @@ const Header: React.FC = () => {
             スレッド作成
           </Button>
         </Box>
+      </Toolbar>
+      <Toolbar>
+        <Typography variant="body1">
+          現在のカテゴリー:　{category}
+        </Typography>
       </Toolbar>
     </AppBar>
   );
