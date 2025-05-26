@@ -10,6 +10,8 @@ router.get('/', async (req, res) => {
       res.status(500).json({ message: err.message });
     }
   });
+
+
   
   // 新しいスレッドを作成
 router.post('/', async (req, res) => {

@@ -8,7 +8,8 @@ const threadSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
   lastPostAt: { type: Date, default: Date.now, index: true },
   category: { type: String, default: 'general' }, // カテゴリを追加
-  
+  viewCount: { type: Number, default: 0 },
+  content: { type: String, required: true }
 });
 
 module.exports = mongoose.model('Thread', threadSchema);

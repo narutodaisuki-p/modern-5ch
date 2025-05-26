@@ -13,8 +13,6 @@ const Thread = require('../models/Thread');
       res.status(500).json({ message: err.message });
     }
   });
-
-  // categories.js ルーター
   router.get('/:categoryId/threads', async (req, res) => {
     try {
       console.log("req.params",req.params);
@@ -24,8 +22,6 @@ const Thread = require('../models/Thread');
       
       // 基本クエリ: カテゴリ指定
       let query = { category: categoryId };
-      
-      
       // キーワード検索
       if (search) {
         query.$or = [
@@ -49,9 +45,7 @@ const Thread = require('../models/Thread');
         sortOption = { viewCount: -1, createdAt: -1 };
       }
       
-      const threads = await Thread.find({category: categoryId}).sort(sortOption);
-      console.log("threads",threads);
-      console.log("categoryId",categoryId);
+      const threads = await Thread.find(query).sort(sortOption);
       res.json(threads);
     } catch (error) {
       res.status(500).json({ message: error.message });

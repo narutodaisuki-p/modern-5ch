@@ -10,6 +10,8 @@ interface Post {
   content: string;
   createdAt: string;
   number: number;
+  threadId?: number;
+  
 }
 
 

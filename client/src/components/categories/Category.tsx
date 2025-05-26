@@ -60,7 +60,7 @@ const Category: React.FC = () => {
 
   useEffect(() => {
     fetchThreads();
-  }, [categoryId, sortOption]); // カテゴリ変更時とソート変更時に再取得
+  }, [categoryId, sortOption, searchTerm]); // カテゴリ変更時とソート変更時に再取得
 
   const handleSearch = () => {
     fetchThreads();
