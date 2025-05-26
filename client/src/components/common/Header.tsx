@@ -6,6 +6,8 @@ import { useAppContext } from '../../context/Appcontext';
 
 const Header: React.FC = () => {
   const { category } = useAppContext();
+
+  
   return (
     <AppBar position="static" sx={{ mb: 2,width: '100%' }}>
       <Toolbar>

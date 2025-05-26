@@ -1,26 +1,34 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+} from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container } from '@mui/material';
 import ThreadList from './components/threads/ThreadList';
 import Thread from './components/threads/Thread';
 import CreateThread from './components/threads/CreateThread';
-import Header from './components/common/Header';
 import CategoryList from './components/categories/CategoryList';
 import { AppProvider } from './context/Appcontext';
+import CategoryLayout from './components/categories/CategoryLayout';
 import Category from './components/categories/Category';
+import Navba from './components/common/Navba';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 
 const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#90ca9f', // 明るい緑色
-      contrastText: '#fff', // 白色
+      main: '#90ca9f',
+      contrastText: '#fff',
     },
     text: {
       primary: '#f5f5f5',
-      secondary: '#b0bec5', // 明るいグレー
+      secondary: '#b0bec5',
     },
     secondary: {
       main: '#757575',
@@ -43,28 +51,39 @@ const theme = createTheme({
   },
 });
 
+// MainContent.jsx
+function MainContent() {
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}> 
+      <Routes>
+        <Route path="/" element={<ThreadList />} />
+        <Route path="/create" element={<CreateThread />} />
+        <Route path="/thread/:threadId" element={<Thread />} />
+        <Route path="/categories" element={<CategoryList />} />
+        {/* カテゴリ関連は Layout を使用 */}
+        <Route element={<CategoryLayout />}>
+          <Route path="/categories/:categoryId" element={<Category />} />
+        </Route>
+      </Routes>
+    </Container>
+  );
+  
+}
+
 function App() {
   return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppProvider>
-        <Router>
-          <Header />
-          <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Routes>
-              <Route path="/thread/:threadId" element={<Thread />} />
-              <Route path="/create" element={<CreateThread />} />
-              <Route path="/categories" element={<CategoryList />} />
-              <Route path="/" element={<ThreadList />} />
-              <Route path="/categories/:categoryId" element={<Category />} />
-
-
-            </Routes>
-          </Container>
-        </Router>
-      </AppProvider>
+      <Router>
+        <AppProvider>
+          <Navba /> 
+          <MainContent />
+        </AppProvider>
+      </Router>
     </ThemeProvider>
+    </LocalizationProvider>
   );
 }
 
-export default App;
+export default App; 

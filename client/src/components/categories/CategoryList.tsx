@@ -5,7 +5,7 @@ import { useAppContext } from '../../context/Appcontext';
 import { getCategories } from '../../api/apiClinet'; // APIからカテゴリを取得する関数をインポート
 
 const CategoryList: React.FC = () => {
-  const {  setLoading, setError } = useAppContext();
+  const {  setLoading, setError, } = useAppContext();
   const [categories, setCategories] = React.useState<any[]>([]); // カテゴリの状態を管理
 
   React.useEffect(() => {

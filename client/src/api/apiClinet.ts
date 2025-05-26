@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { set } from 'mongoose';
 const API_URL = process.env.API_URL || 'http://localhost:5000'; // APIのURLを指定
 
 
@@ -8,7 +7,6 @@ interface Thread {
   title: string;
   createdAt: string;
 }
-
 
 
 
