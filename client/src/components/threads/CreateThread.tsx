@@ -5,12 +5,16 @@ import { Box, Typography, TextField, Button, Paper, MenuItem, CircularProgress }
 import { useAppContext } from '../../context/Appcontext';
 import Loading from '../common/Loading';
 import { getCategories } from '../../api/apiClinet'; // APIからカテゴリを取得する関数をインポート
+import Error from '../common/Error';
+
+
 const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 interface Category {
   _id: string;
   name: string;
 }
+
 
 const CreateThread: React.FC = () => {
   const navigate = useNavigate();
@@ -55,6 +59,11 @@ const CreateThread: React.FC = () => {
     } catch (err) {
       console.error('スレッド作成失敗:', err);
       setError('スレッドの作成に失敗しました。');
+      if (axios.isAxiosError(err) && err.response) {
+        setError(`エラー: ${err.response.data.message || '不明なエラー'}`);
+      } else {
+        setError('ネットワークエラーが発生しました。');
+      }
     } finally {
       setLoading(false);
     }
@@ -62,20 +71,26 @@ const CreateThread: React.FC = () => {
 
   return (
     <Box>
+      {error && (
+        <Error message={error} />
+
+      )}
       <Typography variant="h4" gutterBottom>
         新しいスレッドを作成
-      </Typography>
-      {loading && <Loading />}
-      {error && (
-        <Box sx={{ mb: 2 }}>
-          <Typography color="error">{error}</Typography>
-          {categories === null && (
+         {categories === null && (
             <Button onClick={handleRetry} variant="outlined" sx={{ mt: 1 }}>
               再試行
             </Button>
           )}
-        </Box>
+      </Typography>
+      {loading && <Loading />}
+
+      {!loading && !error && !categories && (
+        <Typography variant="body1" color="text.secondary">
+          カテゴリを読み込んでいます...
+        </Typography>
       )}
+      
 
       <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
         <TextField

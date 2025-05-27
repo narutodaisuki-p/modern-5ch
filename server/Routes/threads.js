@@ -3,7 +3,8 @@ const router = express.Router();
 const Thread = require('../models/Thread');
 const Post = require('../models/Post');
 
-const limiter = require('../middleware/rateLimiter');
+const {postLimiter} = require('../middleware/rateLimiter');
+const Ng = require('../middleware/Ng');
 router.get('/', async (req, res) => {
     try {
       const threads = await Thread.find().sort({ lastPostAt: -1 });
@@ -12,11 +13,9 @@ router.get('/', async (req, res) => {
       res.status(500).json({ message: err.message });
     }
   });
-
-
   
   // 新しいスレッドを作成
-router.post('/',limiter ,async (req, res) => {
+router.post('/',postLimiter ,async (req, res) => {
     try {
       const thread = new Thread({
         title: req.body.title,
@@ -52,7 +51,7 @@ router.get('/:threadId/posts', async (req, res) => {
   });
   
   // スレッドに投稿
-router.post('/:threadId/posts', limiter, async (req, res) => {
+router.post('/:threadId/posts', postLimiter, async (req, res) => {
     try {
       const thread = await Thread.findById(req.params.threadId);
       if (!thread) {
@@ -79,4 +78,22 @@ router.post('/:threadId/posts', limiter, async (req, res) => {
       res.status(400).json({ message: err.message });
     }
   });
+
+router.post('/:threadId/posts/:postId/report',postLimiter, Ng, async (req, res) => {
+    const { threadId, postId } = req.params;
+
+    try {
+        const post = await Post.findOne({ threadId, _id: postId });
+        if (!post) {
+            return res.status(404).json({ message: '投稿が見つかりません' });
+        }
+
+        // NGワードが含まれている場合は削除
+        await Post.deleteOne({ _id: postId });
+        res.status(200).json({ message: '投稿が削除されました' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: '報告処理中にエラーが発生しました' });
+    }
+});
 module.exports = router;

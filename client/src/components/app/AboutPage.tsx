@@ -30,6 +30,7 @@ const AboutPage = () => {
         </Typography>
         <Typography variant="body1" gutterBottom>
             不適切なコンテンツやスパム行為を防ぐためのモデレーション機能も備えています。
+            同一ipからの連続投稿（具体的に15分間に50回以上のpostリクエストが行われた場合）は、スパムとみなされ、投稿が拒否されます。
         </Typography>
         <Typography variant="body1" gutterBottom>
         このプロジェクトは、コミュニティのフィードバックを歓迎しており、改善点や新機能の提案を受け付けています。

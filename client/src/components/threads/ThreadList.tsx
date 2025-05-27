@@ -14,7 +14,6 @@ interface Thread {
 const ThreadList: React.FC = () => {
   const [threads, setThreads] = useState<Thread[]>([]);
   const { loading, setLoading, error, setError } = useAppContext();
-
   
   useEffect(() => {
     setLoading(true);

@@ -10,6 +10,7 @@ const Category = require('./models/Category'); // カテゴリモデルをイン
 const CategoryRoutes = require('./Routes/categories');
 const ThreadRoutes = require('./Routes/threads');
 // const ShopRoutes = require('./Routes/shop'); // ショップ関連のルートをインポート
+const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // レートリミッターをインポート
 
 
 // ミドルウェアの設定
@@ -67,6 +68,8 @@ const initializeCategories = async () => {
 };
 
 initializeCategories().catch((error) => console.error(error));
+
+app.use(globalLimiter); // グローバルなレートリミッターを適用
 
 
 // ルートの設定
