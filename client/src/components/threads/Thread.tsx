@@ -11,8 +11,7 @@ interface Post {
   createdAt: string;
   number: number;
   threadId?: number;
-  
-}
+  }
 
 
 const Thread: React.FC = () => {

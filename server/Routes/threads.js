@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Thread = require('../models/Thread');
 const Post = require('../models/Post');
+
+const limiter = require('../middleware/rateLimiter');
 router.get('/', async (req, res) => {
     try {
       const threads = await Thread.find().sort({ lastPostAt: -1 });
@@ -14,7 +16,7 @@ router.get('/', async (req, res) => {
 
   
   // 新しいスレッドを作成
-router.post('/', async (req, res) => {
+router.post('/',limiter ,async (req, res) => {
     try {
       const thread = new Thread({
         title: req.body.title,
@@ -50,7 +52,7 @@ router.get('/:threadId/posts', async (req, res) => {
   });
   
   // スレッドに投稿
-router.post('/:threadId/posts', async (req, res) => {
+router.post('/:threadId/posts', limiter, async (req, res) => {
     try {
       const thread = await Thread.findById(req.params.threadId);
       if (!thread) {

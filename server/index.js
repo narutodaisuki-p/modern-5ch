@@ -6,9 +6,11 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
-const Category = require('../models/Category'); // カテゴリモデルをインポート
-const CategoryRoutes = require('../Routes/categories');
-const ThreadRoutes = require('../Routes/threads');
+const Category = require('./models/Category'); // カテゴリモデルをインポート
+const CategoryRoutes = require('./Routes/categories');
+const ThreadRoutes = require('./Routes/threads');
+// const ShopRoutes = require('./Routes/shop'); // ショップ関連のルートをインポート
+
 
 // ミドルウェアの設定
 app.use(cors({
@@ -53,13 +55,15 @@ const initializeCategories = async () => {
     { name: '過激な話題', description: '過激な話題や議論' },
     { name : "受験勉強", description: "受験勉強に関する話題" },
   ];
+  const promise = initialCategories.map( async (category) => {
+    Category.findOne({ name: category.name }).then((exists) => {
 
-  for (const category of initialCategories) {
-    const exists = await Category.findOne({ name: category.name });
     if (!exists) {
-      await new Category(category).save();
+      return new Category(category).save();
     }
-  }
+  });
+  });
+  await Promise.all(promise);
 };
 
 initializeCategories().catch((error) => console.error(error));
@@ -68,6 +72,7 @@ initializeCategories().catch((error) => console.error(error));
 // ルートの設定
 app.use('/api/categories', CategoryRoutes);
 app.use('/api/threads', ThreadRoutes);
+// app.use('/api/shop', ShopRoutes); // ショップ関連のルートを使用
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

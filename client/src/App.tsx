@@ -17,7 +17,9 @@ import Category from './components/categories/Category';
 import Navba from './components/common/Navba';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+// import PurchasePage from './shops/PurchasePage'; // 購入ページのインポート
 
+import AboutPage from './components/app/AboutPage'; // Aboutページのインポート
 
 const theme = createTheme({
   palette: {
@@ -60,7 +62,11 @@ function MainContent() {
         <Route path="/create" element={<CreateThread />} />
         <Route path="/thread/:threadId" element={<Thread />} />
         <Route path="/categories" element={<CategoryList />} />
+        <Route path="/ranking" element={<ThreadList />} /> {/* ランキングページはスレッド一覧を再利用 */}
+        <Route path="/about" element={<AboutPage />} /> {/* Aboutページはコンポーネントを使用 */}
         {/* カテゴリ関連は Layout を使用 */}
+{/* 
+        <Route path="/purchase" element={<PurchasePage />} /> 追加 */}
         <Route element={<CategoryLayout />}>
           <Route path="/categories/:categoryId" element={<Category />} />
         </Route>

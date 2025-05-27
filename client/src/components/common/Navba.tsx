@@ -18,6 +18,12 @@ const Navba = () => {
                 <Button color="primary" component={Link} to="/ranking" sx={{ fontWeight: 'bold' }}>
                     ランキング
                 </Button>
+                <Button color="primary" component={Link} to="/about" sx={{ fontWeight: 'bold' }}>
+                    このサイトについて
+                </Button>
+                {/* <Button color="primary" component={Link} to="/purchase" sx={{ fontWeight: 'bold' }}>
+                    購入
+                </Button> */}
             </Toolbar>
         </AppBar>
     )

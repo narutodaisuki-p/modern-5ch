@@ -4,6 +4,8 @@ const Category = require('../models/Category');
 const Thread = require('../models/Thread');
 
 
+
+
   // カテゴリを取得
   router.get('/', async (req, res) => {
     try {
