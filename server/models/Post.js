@@ -7,7 +7,9 @@ const postSchema = new Schema({
   number: { type: Number, required: true ,index: true},
   content: { type: String, required: true },
   name: { type: String, default: '名無しさん' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  imageUrl: { type: String, default: null },
+  imagePath: { type: String, default: null }
 });
 
 module.exports = mongoose.model('Post', postSchema);

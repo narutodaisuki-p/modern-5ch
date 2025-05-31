@@ -2,9 +2,24 @@ const express = require('express');
 const router = express.Router();
 const Thread = require('../models/Thread');
 const Post = require('../models/Post');
-
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const {postLimiter} = require('../middleware/rateLimiter');
 const Ng = require('../middleware/Ng');
+
+// 画像の保存先とファイル名の設定
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
+
 router.get('/', async (req, res) => {
     try {
       const threads = await Thread.find().sort({ lastPostAt: -1 });
@@ -44,6 +59,7 @@ router.post('/',postLimiter ,async (req, res) => {
 router.get('/:threadId/posts', async (req, res) => {
     try {
       const posts = await Post.find({ threadId: req.params.threadId }).sort('number');
+      console.log("posts",posts);
       res.json(posts);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -51,21 +67,23 @@ router.get('/:threadId/posts', async (req, res) => {
   });
   
   // スレッドに投稿
-router.post('/:threadId/posts', postLimiter, async (req, res) => {
+router.post('/:threadId/posts', postLimiter, upload.single('image'), async (req, res) => {
     try {
       const thread = await Thread.findById(req.params.threadId);
       if (!thread) {
-        console.error('Thread not found:', req.params.threadId);
         return res.status(404).json({ message: 'Thread not found' });
       }
   
       const postsCount = await Post.countDocuments({ threadId: req.params.threadId });
+  
       const post = new Post({
         threadId: req.params.threadId,
         number: postsCount + 1,
         content: req.body.content,
-        name: req.body.name || '名無しさん'
+        name: req.body.name || '名無しさん',
+        imageUrl: req.file ? `/uploads/${req.file.filename}` : null
       });
+      console.log("req.file",req.file);
   
       const newPost = await post.save();
       
@@ -87,7 +105,6 @@ router.post('/:threadId/posts/:postId/report',postLimiter, Ng, async (req, res) 
         if (!post) {
             return res.status(404).json({ message: '投稿が見つかりません' });
         }
-
         // NGワードが含まれている場合は削除
         await Post.deleteOne({ _id: postId });
         res.status(200).json({ message: '投稿が削除されました' });

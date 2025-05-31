@@ -3,46 +3,65 @@ import { Box, Typography, Link } from '@mui/material';
 
 const AboutPage = () => {
   return (
-    <Box>
+    <Box p={2} maxWidth="md" mx="auto">
       <Typography variant="h4" gutterBottom>
-        このサイトについて
+        この掲示板について
+      </Typography>
+
+      <Typography variant="body1" gutterBottom>
+        この掲示板は、1人の高校生が「自分が使いたい掲示板を作る」というシンプルな動機からスタートしたオープンソースプロジェクトです。
+      </Typography>
+
+      <Typography variant="h6" gutterBottom>
+        🎯 目的と思想
       </Typography>
       <Typography variant="body1" gutterBottom>
-        この掲示板はオープンソースプロジェクトとして開発されています。
+        この掲示板は、ユーザーが自由に情報を共有し、匿名でも安心して対話できる「ネットの原点」を目指しています。
+        表現の自由を尊重しつつも、最低限の秩序を守ることを大切にしています。
       </Typography>
-        <Typography variant="body1"
-         gutterBottom>
-            目的は、ユーザーが自由に情報を共有し、コミュニケーションを楽しむことです。
-        
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-        この掲示板は、高校生が趣味で開発したプロジェクトです。  
-        若い世代の視点から、モダンで使いやすい掲示板を目指して作られました。
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-        このプロジェクトは、ReactとNode.jsを使用して構築されており、フロントエンドとバックエンドの両方がオープンソースで公開されています。
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-            表現の自由を尊重し、ユーザーが安心して利用できる環境を提供することを目指しています。
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-        この掲示板は、ユーザーが匿名で投稿できるように設計されており、個人情報の保護を重視しています。
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-            不適切なコンテンツやスパム行為を防ぐためのモデレーション機能も備えています。
-            同一ipからの連続投稿（具体的に15分間に50回以上のpostリクエストが行われた場合）は、スパムとみなされ、投稿が拒否されます。
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-        このプロジェクトは、コミュニティのフィードバックを歓迎しており、改善点や新機能の提案を受け付けています。
-        </Typography>
-        {/* お問い合わせページを持ってくる */}
-        <Typography variant="body1" gutterBottom>
-            ご意見やご要望がある場合は、GitHubのリポジトリでIssueを作成してください。
-        </Typography>
-        
 
-      <Link href="https://github.com/narutodaisuki-p/modern-5ch.git" target="_blank" rel="noopener">
-        GitHubリポジトリはこちら
+      <Typography variant="h6" gutterBottom>
+        🛠 技術スタック
+      </Typography>
+      <Typography variant="body1" gutterBottom>
+        フロントエンドは <strong>React + TypeScript</strong>、バックエンドは <strong>Node.js + Express</strong>、データベースは <strong>MongoDB</strong> を使用。
+        GitHubで全コードを公開しており、誰でも改善や改造ができます。
+      </Typography>
+
+      <Typography variant="h6" gutterBottom>
+        🔐 セキュリティと安心設計
+      </Typography>
+      <Typography variant="body1" gutterBottom>
+        スパム対策や不適切な投稿に対して、以下のようなモデレーション機能を実装しています：
+      </Typography>
+      <ul>
+        <li>NGワード自動チェック</li>
+        <li>15分間に50回以上の投稿をスパムと判定しブロック</li>
+        <li>通報機能によるユーザー主導の監視</li>
+      </ul>
+
+      <Typography variant="h6" gutterBottom>
+        🧠 開発の背景
+      </Typography>
+      <Typography variant="body1" gutterBottom>
+        学校の勉強より、実際に動くものを作ることに価値があると信じています。
+        この掲示板は「思考停止せず、自分の言葉で語れるネットの場」を取り戻す試みです。
+      </Typography>
+
+      <Typography variant="h6" gutterBottom>
+        💬 フィードバック歓迎
+      </Typography>
+      <Typography variant="body1" gutterBottom>
+        このプロジェクトはあなたの意見で進化します。
+        改善点や新機能の提案は、GitHubのIssueから気軽にどうぞ。
+      </Typography>
+
+      <Link
+        href="https://github.com/narutodaisuki-p/modern-5ch.git"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        👉 GitHubリポジトリはこちら
       </Link>
     </Box>
   );

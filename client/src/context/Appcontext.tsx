@@ -16,7 +16,7 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppProvider: React.FC<{
   children: React.ReactNode;
   categoryId?: string;
-}> = ({ children, categoryId }) => {
+}> = ({ children, categoryId })  => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
@@ -34,8 +34,6 @@ export const AppProvider: React.FC<{
         if (!res.ok) throw new Error('Fetch failed');
         const data = await res.json();
         setCategory(data.name);
-        console.log("category",data.name);
-        console.log(category);
       } catch (err) {
         setError('カテゴリの取得に失敗しました');
       } finally {

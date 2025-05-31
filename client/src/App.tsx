@@ -20,6 +20,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 // import PurchasePage from './shops/PurchasePage'; // 購入ページのインポート
 
 import AboutPage from './components/app/AboutPage'; // Aboutページのインポート
+import Login from './components/app/Login';
+import Register from './components/app/Register';
 
 const theme = createTheme({
   palette: {
@@ -64,6 +66,8 @@ function MainContent() {
         <Route path="/categories" element={<CategoryList />} />
         <Route path="/ranking" element={<ThreadList />} /> {/* ランキングページはスレッド一覧を再利用 */}
         <Route path="/about" element={<AboutPage />} /> {/* Aboutページはコンポーネントを使用 */}
+        <Route path='/login' element={<Login />}></Route>
+        <Route path='/register' element={<Register />}></Route>
         {/* カテゴリ関連は Layout を使用 */}
 {/* 
         <Route path="/purchase" element={<PurchasePage />} /> 追加 */}

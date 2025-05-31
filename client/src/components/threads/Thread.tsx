@@ -10,6 +10,7 @@ interface Post {
   createdAt: string;
   number: number;
   threadId?: number;
+  imageUrl?: string;
 }
 
 const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: number) => void }) => (
@@ -18,6 +19,14 @@ const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: nu
       {post.number}. {new Date(post.createdAt).toLocaleString()}
     </Typography>
     <Typography variant="body1">{post.content}</Typography>
+    {post.imageUrl && (
+      console.log(post),
+      <img
+        src={`http://localhost:5000${post.imageUrl}`}
+        alt="Post"
+        style={{ maxWidth: '100%', marginTop: '10px' }}
+      />
+    )}
     <Button
       variant="outlined"
       color="error"
@@ -36,6 +45,7 @@ const Thread: React.FC = () => {
   const { setLoading, setError } = useAppContext();
   const [loading, setLoadingState] = useState(true);
   const [error, setErrorState] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const loadPosts = useCallback(async () => {
     if (!threadId) return;
@@ -53,25 +63,28 @@ const Thread: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.trim()) return;
+    if (!newPost.trim() ) return;
+
+    const formData = new FormData();
+    formData.append('content', newPost);
+    formData.append('image', selectedFile ?? '');
 
     try {
       const response = await fetch(`http://localhost:5000/api/threads/${threadId}/posts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ threadId, content: newPost }),
+        body: formData,
       });
 
-      if (!response.ok) throw setErrorState('投稿の送信に失敗しました');
-
+      if (!response.ok) throw new Error('投稿の送信に失敗しました');
 
       const savedPost = await response.json();
       setPosts((prevPosts) => [...prevPosts, savedPost]);
       setNewPost('');
+      setSelectedFile(null);
     } catch (error) {
       console.error(error);
       setErrorState('投稿の送信に失敗しました');
-      setTimeout(() => setErrorState(null), 3000);    // 3秒後にエラーメッセージをクリア
+      setTimeout(() => setErrorState(null), 3000);
     }
   };
 
@@ -87,6 +100,8 @@ const Thread: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        alert(`通報の送信に失敗しました: ${errorData.message}`);
+      
        setErrorState(`通報の送信に失敗しました: ${errorData.message}`);
        setTimeout(() => setErrorState(null), 1000); // 1秒後にエラーメッセージをクリア
         throw new Error(`通報の送信に失敗しました: ${errorData.message}`);
@@ -109,6 +124,7 @@ const Thread: React.FC = () => {
 
       <Box mb={4}>
         {posts.map((post) => (
+          console.log("post",post),
           <PostItem key={post._id} post={post} onReport={() =>{
             handleReport(post._id, post.content);
           }} />
@@ -126,6 +142,14 @@ const Thread: React.FC = () => {
           variant="outlined"
           sx={{ mb: 2 }}
         />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+          style={{ display: 'block', marginBottom: '10px' }}
+          aria-label="画像を選択"
+        />
+
         <Button type="submit" variant="outlined" color="primary">
           投稿する
         </Button>
