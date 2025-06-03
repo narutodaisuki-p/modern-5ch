@@ -4,6 +4,7 @@ import { Box, Typography, Paper, List, ListItem, ListItemText, Button } from '@m
 import axios from 'axios';
 import { useAppContext } from '../../context/Appcontext';
 import { useParams } from 'react-router-dom';
+const URL = process.env.REACT_APP_API_URL;
 
 interface Thread {
   _id: string;
@@ -17,7 +18,7 @@ const ThreadList: React.FC = () => {
   
   useEffect(() => {
     setLoading(true);
-    axios.get('http://localhost:5000/api/threads')
+    axios.get(`${URL}/api/threads`)
       .then((response) => {
         setThreads(response.data);
       })

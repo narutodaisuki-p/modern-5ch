@@ -4,6 +4,7 @@ import { Box, Typography, Paper, TextField, Button } from '@mui/material';
 import { fetchPosts } from '../../api/apiClinet';
 import { useAppContext } from '../../context/Appcontext';
 import ErrorIs from '../common/Error';
+const URL = process.env.REACT_APP_API_URL;
 interface Post {
   _id: number;
   content: string;
@@ -21,7 +22,7 @@ const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: nu
     <Typography variant="body1">{post.content}</Typography>
     {post.imageUrl && (
       <img
-        src={`http://localhost:5000${post.imageUrl}`}
+        src={`${URL}${post.imageUrl}`}
         alt="Post"
         style={{ maxWidth: '100%', marginTop: '10px' }}
       />

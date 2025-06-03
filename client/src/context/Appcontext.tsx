@@ -14,6 +14,7 @@ interface AppContextProps {
   isLoggedIn: boolean;
   setIsLoggedIn: (isLoggedIn: boolean) => void;
 }
+const URL = process.env.REACT_APP_API_URL;
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
@@ -35,7 +36,7 @@ export const AppProvider: React.FC<{
           setError(null);
           return;
         }
-        const res = await fetch(`http://localhost:5000/api/categories/${categoryId}`);
+        const res = await fetch(`${URL}/api/categories/${categoryId}`);
         if (!res.ok) throw new Error('Fetch failed');
         const data = await res.json();
         setCategory(data.name);
@@ -52,7 +53,7 @@ export const AppProvider: React.FC<{
   useEffect(() =>{
     const token = localStorage.getItem('jwt');
     if (token) {
-      const response = fetch('http://localhost:5000/auth/verify', {
+      const response = fetch(`${URL}/auth/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

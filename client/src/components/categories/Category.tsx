@@ -19,7 +19,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
-
+const URL = process.env.REACT_APP_API_URL;
 interface Thread {
   _id: string;
   title: string;
@@ -48,7 +48,7 @@ const Category: React.FC = () => {
         ...(endDate && { endDate: format(endDate, 'yyyy-MM-dd') })
       };
 
-      const response = await axios.get(`http://localhost:5000/api/categories/${categoryId}/threads`, { params });
+      const response = await axios.get(`${URL}/api/categories/${categoryId}/threads`, { params });
       console.log("response",response);
       setThreads(response.data);
     } catch (error) {

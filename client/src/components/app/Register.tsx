@@ -5,7 +5,7 @@ import ErrorTag from '../common/Error'
 import Success from '../common/Success'
 import { useAppContext } from '../../context/Appcontext'
 import { useNavigate } from 'react-router-dom'
-const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+const URL = process.env.REACT_APP_API_URL;
 
 interface RegisterGoogleResponse {
   message: string
