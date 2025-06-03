@@ -8,7 +8,8 @@ const path = require('path');
 const fs = require('fs');
 const {postLimiter} = require('../middleware/rateLimiter');
 const Ng = require('../middleware/Ng');
-const auth = require('../middleware/auth');
+const {auth, fileSizeLimiter} = require('../middleware/auth');
+const {fileSizeLmiter} = require('../middleware/auth');
 
 // 画像の保存先とファイル名の設定
 const storage = multer.diskStorage({
@@ -78,7 +79,14 @@ router.get('/:threadId/posts', async (req, res) => {
 router.post('/:threadId/posts', postLimiter, upload.single('image'), async (req, res) => {
     try {
       if (req.file) {
-        await auth(req, res, () => {}); // 画像がある場合のみ認証を通過
+        try{
+
+              await auth(req, res); // 認証ミドルウェアを適用
+              await fileSizeLimiter(req, res); // ファイルサイズ制限ミドルウェアを適用
+        }
+        catch (err) {
+          return res.status(400).json({ message: err.message });
+      }
       }
 
       const thread = await Thread.findById(req.params.threadId);

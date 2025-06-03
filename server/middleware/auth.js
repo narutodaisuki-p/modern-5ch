@@ -2,11 +2,12 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AppError = require('../utils/Error');
 
+
 const fileSize = 1024 * 1024 * 5; // 5MB
 // ファイルサイズ制限のミドルウェア
 const fileSizeLimiter = (req, res, next) => {
   if (req.file && req.file.size > fileSize) {
-    return res.status(413).json({ error: 'ファイルサイズが大きすぎます。5MB以下のファイルをアップロードしてください。' });
+    return AppError('ファイルサイズが大きすぎます。最大5MBまでです。', 413);
   }
   next();
 };
@@ -49,4 +50,7 @@ const auth = async (req, res, next) => {
   }
 };
 
-module.exports = auth;
+module.exports = {
+  auth,
+  fileSizeLimiter
+};

@@ -22,7 +22,8 @@
     "mongoose": "^7.5.0",
     "multer": "^2.0.0",
     "openai": "^4.103.0",
-    "stripe": "^18.1.1"
+    "stripe": "^18.1.1",
+    "bcrypt": "^5.1.1"
   },
   "devDependencies": {
     "concurrently": "^8.2.1",

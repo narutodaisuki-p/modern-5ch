@@ -66,12 +66,4 @@ router.get('/:categoryId', async (req, res) => {
     }
   
   });
-  router.get('/popular', async (req, res) => {
-    try {
-      const categories = await Category.find().sort({ threadCount: -1 }).limit(10); // スレッド数の降順でソート
-      res.json(categories);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
   module.exports = router;
