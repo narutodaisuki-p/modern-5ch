@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Typography, Avatar, Box } from '@mui/material';
+const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const Profile = () => {
     const [profileImage, setProfileImage] = useState<string | null>(null);

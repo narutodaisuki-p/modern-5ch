@@ -70,7 +70,7 @@ const Thread: React.FC = () => {
     formData.append('image', selectedFile ?? '');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/threads/${threadId}/posts`, {
+      const response = await fetch(`${URL}/api/threads/${threadId}/posts`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('jwt') || ''}`,
         },
@@ -95,7 +95,7 @@ const Thread: React.FC = () => {
     if (!threadId) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/threads/${threadId}/posts/${postId}/report`, {
+      const response = await fetch(`${URL}/api/threads/${threadId}/posts/${postId}/report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
