@@ -14,12 +14,18 @@ const ThreadRoutes = require('./Routes/threads');
 const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // レートリミッターをインポート
 
 app.use('/uploads', express.static('uploads'));
+const allowedOrigins = [
+  'https://modern-5ch.vercel.app',                 // 本番用
+  'https://modern-5ch-z6g6.vercel.app',            // プレビューや新URL用
+  'http://localhost:3000'                          // ローカル開発用（必要なら）
+];
+
 
 
 
 // ミドルウェアの設定
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000', // ReactアプリのURL
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
