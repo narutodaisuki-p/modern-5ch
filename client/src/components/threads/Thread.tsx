@@ -20,7 +20,6 @@ const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: nu
     </Typography>
     <Typography variant="body1">{post.content}</Typography>
     {post.imageUrl && (
-      console.log(post),
       <img
         src={`http://localhost:5000${post.imageUrl}`}
         alt="Post"
@@ -71,6 +70,9 @@ const Thread: React.FC = () => {
 
     try {
       const response = await fetch(`http://localhost:5000/api/threads/${threadId}/posts`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('jwt') || ''}`,
+        },
         method: 'POST',
         body: formData,
       });

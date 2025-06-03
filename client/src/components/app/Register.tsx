@@ -3,9 +3,9 @@ import { Box, TextField, Button, Typography } from '@mui/material'
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google'
 import ErrorTag from '../common/Error'
 import Success from '../common/Success'
+import { useAppContext } from '../../context/Appcontext'
+import { useNavigate } from 'react-router-dom'
 const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
-
-
 
 interface RegisterGoogleResponse {
   message: string
@@ -15,59 +15,85 @@ interface RegisterGoogleResponse {
 const Register = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const { setIsLoggedIn } = useAppContext();
+  const navigate = useNavigate();
 
-  const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
-    console.log('Google registration successful:', credentialResponse)
-    // 必要に応じてトークンをバックエンドに送信
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    try {
+      // Send the credential to your backend
+      const res = await fetch(`${URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
 
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Google registration failed");
+      }
+
+      const data: RegisterGoogleResponse = await res.json()
+      setSuccessMessage(data.message || "Google registration successful")
+      if (data.token) localStorage.setItem("jwt", data.token)
+      setIsLoggedIn(true);
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Google registration failed")
+    }
   }
 
   const handleGoogleError = () => {
-    console.error('Google registration failed')
+    setError('Google registration failed')
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get("username")?.toString() || "";
+    const email = formData.get('email')?.toString() || '';
+    const password = formData.get('password')?.toString() || '';
+
+    if (!username || !email || !password) {
+      setError('全てのフィールドを入力してください');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      setError("有効なメールアドレスを入力してください");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "登録に失敗しました");
+      }
+      const data: RegisterGoogleResponse = await res.json()
+      setSuccessMessage(data.message || "登録成功")
+      if (data.token) localStorage.setItem("jwt", data.token)
+      setIsLoggedIn(true);
+    
+    } catch (err: any) {
+      setError(err.message || "登録に失敗しました")
+    }
   }
 
   return (
     <Box sx={{ maxWidth: '400px', mx: 'auto', mt: 4 }}>
       {error && <ErrorTag message={error} />}
       {successMessage && <Success message={successMessage} />}
-      <form
-      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        const formData = new FormData(e.currentTarget)
-        const data = {
-          username: formData.get('username'),
-          email: formData.get('email'),
-          password: formData.get('password')
-        }
-        if (!data.username || !data.email || !data.password) {
-          setError('All fields are required')
-          return
-        }
-        fetch(`${URL}/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        })
-          .then(async (response) => {
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.message || 'Registration failed');
-            }
-            return response.json() as Promise<RegisterGoogleResponse>; // 型を指定
-          })
-          .then((data) => {
-            setSuccessMessage(data.message || 'Registration successful');
-            setError(null); // エラーをクリア
-            // ローカルに保存jwtを
-            localStorage.setItem('jwt', data.token || '');
-          })
-          .catch((error) => {
-            console.error('Registration error:', error);
-            setError(error.message || 'Registration failed');
-          });
-      }}>
+      <form onSubmit={handleSubmit}>
         <Typography variant="h4" align="center" gutterBottom>
           新規登録
         </Typography>
@@ -125,7 +151,7 @@ const Register = () => {
       </GoogleOAuthProvider>
 
       <Typography variant="body2" align="center" sx={{ mt: 4 }}>
-        <a href="/terms">利用規約</a> と <a href="/privacy">プライバシーポリシー</a> に同意する必要があります。
+        <a href="/terms">利用規約</a>に同意する必要があります。
       </Typography>
     </Box>
   )

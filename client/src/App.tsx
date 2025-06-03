@@ -22,6 +22,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import AboutPage from './components/app/AboutPage'; // Aboutページのインポート
 import Login from './components/app/Login';
 import Register from './components/app/Register';
+import Profile from './components/app/Profile'; // プロフィールページのインポート
+import Terms from './components/app/Terms';
 
 const theme = createTheme({
   palette: {
@@ -68,6 +70,8 @@ function MainContent() {
         <Route path="/about" element={<AboutPage />} /> {/* Aboutページはコンポーネントを使用 */}
         <Route path='/login' element={<Login />}></Route>
         <Route path='/register' element={<Register />}></Route>
+        <Route path='/profile' element={<Profile />}></Route>
+        <Route path='/terms' element={<Terms />}></Route>
         {/* カテゴリ関連は Layout を使用 */}
 {/* 
         <Route path="/purchase" element={<PurchasePage />} /> 追加 */}
@@ -96,4 +100,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

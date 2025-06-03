@@ -1,5 +1,7 @@
 import { Box } from '@mui/material';
 import { Typography } from '@mui/material';
+import { set } from 'date-fns';
+import { is } from 'date-fns/locale';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface AppContextProps {
@@ -9,6 +11,8 @@ interface AppContextProps {
   setError: (error: string | null) => void;
   category: string | null;
   categoryId: string | undefined;
+  isLoggedIn: boolean;
+  setIsLoggedIn: (isLoggedIn: boolean) => void;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -20,6 +24,7 @@ export const AppProvider: React.FC<{
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const fetchCategory = async () => {
@@ -44,9 +49,36 @@ export const AppProvider: React.FC<{
     fetchCategory();
   }, [categoryId]);
 
+  useEffect(() =>{
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      const response = fetch('http://localhost:5000/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ token }),
+      }); 
+      response.then(res => {
+        if (!res.ok) {
+          localStorage.removeItem('jwt');
+          setError(res.statusText);
+        }
+        return setIsLoggedIn(true);
+
+      }).catch(err => {
+        console.error('認証エラー:', err);
+        setError('認証に失敗しました。再度ログインしてください。');
+      });
+
+
+    }
+  }, []);
+
   return (
-    <AppContext.Provider value={{ loading, setLoading, error, setError, category, categoryId }}>
-      {children}    
+    <AppContext.Provider value={{ loading, setLoading, error, setError, category, categoryId, isLoggedIn, setIsLoggedIn }}>
+      {children}
     </AppContext.Provider>
   );
 };

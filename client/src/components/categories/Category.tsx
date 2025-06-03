@@ -143,7 +143,7 @@ const Category: React.FC = () => {
           >
             <MenuItem value="newest">新着順</MenuItem>
             <MenuItem value="oldest">古い順</MenuItem>
-            <MenuItem value="popular">人気順</MenuItem>
+            <MenuItem value="popular">投稿数順</MenuItem>
           </Select>
         </FormControl>
         
