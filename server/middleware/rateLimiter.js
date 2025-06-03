@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 // 投稿専用のレートリミッター
 const postLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15分
-  max: 20, // 投稿は15分間に最大20回まで
+  max: 50, // 投稿は15分間に最大50回まで
   message: {
     error: '投稿が多すぎます。しばらく時間をおいてから再試行してください。',
   },
@@ -14,7 +14,7 @@ const postLimiter = rateLimit({
 // グローバルなレートリミッター（他のエンドポイント用）
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15分
-  max: 100, // 全体で15分間に最大100リクエスト
+  max: 400, // 全体で15分間に最大400リクエスト
   message: {
     error: 'リクエストが多すぎます。しばらく時間をおいてから再試行してください。',
   },

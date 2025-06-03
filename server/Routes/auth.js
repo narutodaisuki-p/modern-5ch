@@ -3,6 +3,8 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // 新規登録エンドポイント
 router.post('/register', async (req, res) => {
@@ -68,6 +70,68 @@ router.post("/verify", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'トークンの検証中にエラーが発生しました。' });
+  }
+});
+
+// Google認証エンドポイント
+router.post('/google', async (req, res) => {
+  const { credential } = req.body;
+
+  if (!credential) {
+    return res.status(400).json({ message: 'Google認証情報が必要です' });
+  }
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const name = payload.name;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = new User({
+        name,
+        email,
+        password: null, // Google認証ではパスワードは不要
+      });
+      await user.save();
+    }
+
+    const token = user.generateAuthToken();
+    res.status(200).json({ message: 'Google認証成功', token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Google認証に失敗しました' });
+  }
+});
+router.get("/profile", async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'トークンが必要です' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'ユーザーが見つかりません' });
+    }
+
+    res.status(200).json({
+      name: user.name,
+      email: user.email,
+      picture: user.picture,
+    });
+  } catch (error) {
+    console.error('プロフィール情報取得エラー:', error);
+    res.status(500).json({ message: 'プロフィール情報の取得中にエラーが発生しました' });
   }
 });
 

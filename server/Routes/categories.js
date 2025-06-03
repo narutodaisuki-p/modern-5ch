@@ -17,7 +17,6 @@ const Thread = require('../models/Thread');
   });
   router.get('/:categoryId/threads', async (req, res) => {
     try {
-      console.log("req.params",req.params);
       const { categoryId } = req.params;
       const { search, sort, startDate, endDate } = req.query;
 
@@ -44,7 +43,7 @@ const Thread = require('../models/Thread');
       if (sort === 'oldest') {
         sortOption = { createdAt: 1 };
       } else if (sort === 'popular') {
-        sortOption = { viewCount: -1, createdAt: -1 };
+        sortOption = { postCount: -1, createdAt: -1 }; // 投稿数の降順でソート
       }
       
       const threads = await Thread.find(query).sort(sortOption);
@@ -66,5 +65,13 @@ router.get('/:categoryId', async (req, res) => {
       res.status(500).json({ message: err.message });
     }
   
+  });
+  router.get('/popular', async (req, res) => {
+    try {
+      const categories = await Category.find().sort({ threadCount: -1 }).limit(10); // スレッド数の降順でソート
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
   });
   module.exports = router;

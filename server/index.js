@@ -12,7 +12,9 @@ const CategoryRoutes = require('./Routes/categories');
 const ThreadRoutes = require('./Routes/threads');
 // const ShopRoutes = require('./Routes/shop'); // ショップ関連のルートをインポート
 const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // レートリミッターをインポート
+
 app.use('/uploads', express.static('uploads'));
+
 
 
 // ミドルウェアの設定
@@ -77,7 +79,7 @@ app.use(globalLimiter); // グローバルなレートリミッターを適用
 // ルートの設定
 app.use('/auth', auth); // 認証関連のルートを使用
 app.use('/api/categories', CategoryRoutes);
-app.use('/api/threads', ThreadRoutes);
+app.use('/api/threads', ThreadRoutes); // スレッド関連のルートを使用
 // app.use('/api/shop', ShopRoutes); // ショップ関連のルートを使用
 
 app.use((err, req, res, next) => {
