@@ -5,6 +5,7 @@ import { fetchPosts } from '../../api/apiClinet';
 import { useAppContext } from '../../context/Appcontext';
 import ErrorIs from '../common/Error';
 import { ht } from 'date-fns/locale';
+
 const URL = process.env.REACT_APP_API_URL || 'https://localhost:5000';
 interface Post {
   _id: number;

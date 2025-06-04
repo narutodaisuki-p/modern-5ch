@@ -63,6 +63,12 @@ const AboutPage = () => {
       >
         👉 GitHubリポジトリはこちら
       </Link>
+      <Box>
+        <Link href="/terms" target="_blank" color="primary" underline="hover">
+          利用規約
+        </Link>
+      </Box>
+       
     </Box>
   );
 };

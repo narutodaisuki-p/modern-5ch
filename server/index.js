@@ -4,6 +4,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const auth = require('./Routes/auth'); // 認証関連のルートをインポート
 const cloudinary = require('cloudinary').v2;
+if (process.env.NODE_ENV !== 'production') {
+  console.log("process.env.NODE_ENV is not production, loading .env file");
+}
 
 // Cloudinaryの設定
 cloudinary.config({
@@ -26,7 +29,8 @@ const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // �
 const allowedOrigins = [
   'https://jappan.vercel.app',                 // 本番用
   'https://modern-5ch-z6g6.vercel.app',            // プレビューや新URL用
-  'http://localhost:3000'                          // ローカル開発用（必要なら）
+  'http://localhost:3000'
+                           // ローカル開発用（必要なら）
 ];
 
 // ミドルウェアの設定
@@ -40,7 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // MongoDBの接続
-mongoose.connect( 'mongodb://localhost:27017/modern-5ch', {
+mongoose.connect( process.env.MONGODB_URI || 'mongodb://localhost:27017/modern-5ch', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
@@ -73,7 +77,6 @@ const initializeCategories = async () => {
   ];
   const promise = initialCategories.map( async (category) => {
     Category.findOne({ name: category.name }).then((exists) => {
-
     if (!exists) {
       return new Category(category).save();
     }
