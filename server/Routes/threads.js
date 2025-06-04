@@ -6,7 +6,8 @@ const Category = require('../models/Category');
 const {postLimiter} = require('../middleware/rateLimiter');
 const Ng = require('../middleware/Ng');
 const {auth, fileSizeLimiter} = require('../middleware/auth');
-const cloudinary = require('cloudinary').v2; // index.jsで設定済みのCloudinaryをインポート
+const cloudinary = require('cloudinary').v2; // Cloudinaryをインポート
+
 
 router.get('/', async (req, res) => {
     try {
@@ -63,13 +64,13 @@ router.get('/:threadId/posts', async (req, res) => {
   // スレッドに投稿
 router.post('/:threadId/posts', postLimiter, async (req, res) => {
     try {
-        if (req.file) {
+        if (req.body.image) {
             try {
                 await auth(req, res); // 認証ミドルウェアを適用
                 await fileSizeLimiter(req, res); // ファイルサイズ制限ミドルウェアを適用
 
                 // Cloudinaryに画像をアップロード
-                const result = await cloudinary.uploader.upload(req.file.path);
+                const result = await cloudinary.uploader.upload(req.body.image);
                 req.body.imageUrl = result.secure_url;
             } catch (err) {
                 return res.status(400).json({ message: err.message });
