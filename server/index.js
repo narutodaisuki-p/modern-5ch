@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const auth = require('./Routes/auth'); // 認証関連のルートをインポート
+dotenv.config(); // 環境変数を読み込む
 const cloudinary = require('cloudinary').v2;
 if (process.env.NODE_ENV !== 'production') {
   console.log("process.env.NODE_ENV is not production, loading .env file");
@@ -16,8 +17,6 @@ cloudinary.config({
   secure: true // HTTPSを使用する場合はtrue
 });
 
-
-dotenv.config();
 
 const app = express();
 const Category = require('./models/Category'); // カテゴリモデルをインポート
