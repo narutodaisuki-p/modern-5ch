@@ -78,7 +78,7 @@ const Login = () => {
       return;
     }
 
-    fetch('http://localhost:5000/auth/login', {
+    fetch(`${URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ const Login = () => {
 
   const handleGoogleLogin = (credentialResponse: any) => {
     console.log('Googleログイン成功:', credentialResponse.credential);
-    fetch('http://localhost:5000/auth/google', {
+    fetch(`${URL}/auth/google`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

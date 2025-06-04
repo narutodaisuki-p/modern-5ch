@@ -17,7 +17,7 @@ const Profile = () => {
             }
 
             try {
-                const response = await fetch('http://localhost:5000/auth/profile', {
+                const response = await fetch(`${URL}/auth/profile`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
