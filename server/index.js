@@ -41,12 +41,14 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.set('trust proxy', 1); // リバースプロキシを信頼
 
 // MongoDBの接続
-mongoose.connect( process.env.MONGODB_URI || 'mongodb://localhost:27017/modern-5ch', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/modern-5ch', {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
 })
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.log(err));
@@ -104,4 +106,4 @@ app.use((err, req, res, next) => {
 
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
