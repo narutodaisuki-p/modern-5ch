@@ -3,6 +3,16 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const auth = require('./Routes/auth'); // 認証関連のルートをインポート
+const cloudinary = require('cloudinary').v2;
+
+// Cloudinaryの設定
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true // HTTPSを使用する場合はtrue
+});
+
 
 dotenv.config();
 
@@ -13,15 +23,11 @@ const ThreadRoutes = require('./Routes/threads');
 // const ShopRoutes = require('./Routes/shop'); // ショップ関連のルートをインポート
 const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // レートリミッターをインポート
 
-app.use('/uploads', express.static('uploads'));
 const allowedOrigins = [
   'https://jappan.vercel.app',                 // 本番用
   'https://modern-5ch-z6g6.vercel.app',            // プレビューや新URL用
   'http://localhost:3000'                          // ローカル開発用（必要なら）
 ];
-
-
-
 
 // ミドルウェアの設定
 app.use(cors({
@@ -33,9 +39,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-
 // MongoDBの接続
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/modern-5ch', {
+mongoose.connect( 'mongodb://localhost:27017/modern-5ch', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })

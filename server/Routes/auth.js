@@ -20,11 +20,13 @@ router.post('/register', async (req, res) => {
       name: username,
       email,
       password: hashedPassword,
+      google: false, // Google認証を使用していないことを示すフラグ
     });
 
     console.log('新規ユーザーの登録:', {
       name: newUser.name,
       email: newUser.email,
+      google: newUser.google,
     });
 
     await newUser.save();
@@ -72,7 +74,6 @@ router.post("/verify", async (req, res) => {
 // Google認証エンドポイント
 router.post('/google', async (req, res) => {
   const { credential } = req.body;
-
   if (!credential) {
     return res.status(400).json({ message: 'Google認証情報が必要です' });
   }

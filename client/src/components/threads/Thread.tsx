@@ -4,7 +4,8 @@ import { Box, Typography, Paper, TextField, Button } from '@mui/material';
 import { fetchPosts } from '../../api/apiClinet';
 import { useAppContext } from '../../context/Appcontext';
 import ErrorIs from '../common/Error';
-const URL = process.env.REACT_APP_API_URL;
+import { ht } from 'date-fns/locale';
+const URL = process.env.REACT_APP_API_URL || 'https://localhost:5000';
 interface Post {
   _id: number;
   content: string;
@@ -152,6 +153,17 @@ const Thread: React.FC = () => {
           style={{ display: 'block', marginBottom: '10px' }}
           aria-label="画像を選択"
         />
+        {/* 画像を表示 */}
+        {selectedFile && (
+          <Box sx={{ mb: 2 }}>
+            <img
+              src={window.URL.createObjectURL(selectedFile)}
+              alt="Selected"
+              style={{ maxWidth: '50%', marginTop: '10px' }}
+            />
+          </Box>
+          
+        )}
 
         <Button type="submit" variant="outlined" color="primary">
           投稿する

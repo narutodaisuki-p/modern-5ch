@@ -3,25 +3,10 @@ const router = express.Router();
 const Thread = require('../models/Thread');
 const Post = require('../models/Post');
 const Category = require('../models/Category');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const {postLimiter} = require('../middleware/rateLimiter');
 const Ng = require('../middleware/Ng');
 const {auth, fileSizeLimiter} = require('../middleware/auth');
-const {fileSizeLmiter} = require('../middleware/auth');
-
-// 画像の保存先とファイル名の設定
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ storage: storage });
+const cloudinary = require('cloudinary').v2; // index.jsで設定済みのCloudinaryをインポート
 
 router.get('/', async (req, res) => {
     try {
@@ -76,50 +61,52 @@ router.get('/:threadId/posts', async (req, res) => {
   });
   
   // スレッドに投稿
-router.post('/:threadId/posts', postLimiter, upload.single('image'), async (req, res) => {
+router.post('/:threadId/posts', postLimiter, async (req, res) => {
     try {
-      if (req.file) {
-        try{
+        if (req.file) {
+            try {
+                await auth(req, res); // 認証ミドルウェアを適用
+                await fileSizeLimiter(req, res); // ファイルサイズ制限ミドルウェアを適用
 
-              await auth(req, res); // 認証ミドルウェアを適用
-              await fileSizeLimiter(req, res); // ファイルサイズ制限ミドルウェアを適用
+                // Cloudinaryに画像をアップロード
+                const result = await cloudinary.uploader.upload(req.file.path);
+                req.body.imageUrl = result.secure_url;
+            } catch (err) {
+                return res.status(400).json({ message: err.message });
+            }
         }
-        catch (err) {
-          return res.status(400).json({ message: err.message });
-      }
-      }
 
-      const thread = await Thread.findById(req.params.threadId);
-      if (!thread) {
-        return res.status(404).json({ message: 'Thread not found' });
-      }
+        const thread = await Thread.findById(req.params.threadId);
+        if (!thread) {
+            return res.status(404).json({ message: 'Thread not found' });
+        }
 
-      const postsCount = await Post.countDocuments({ threadId: req.params.threadId });
+        const postsCount = await Post.countDocuments({ threadId: req.params.threadId });
 
-      const post = new Post({
-        threadId: req.params.threadId,
-        number: postsCount + 1,
-        content: req.body.content,
-        name: req.body.name || '名無しさん',
-        imageUrl: req.file ? `/uploads/${req.file.filename}` : null
-      });
+        const post = new Post({
+            threadId: req.params.threadId,
+            number: postsCount + 1,
+            content: req.body.content,
+            name: req.body.name || '名無しさん',
+            imageUrl: req.body.imageUrl || null
+        });
 
-      const newPost = await post.save();
+        const newPost = await post.save();
 
-      // 投稿作成時にpostCountをインクリメント
-      await Thread.findByIdAndUpdate(
-        req.params.threadId,
-        { $inc: { postCount: 1 } }
-      );
+        // 投稿作成時にpostCountをインクリメント
+        await Thread.findByIdAndUpdate(
+            req.params.threadId,
+            { $inc: { postCount: 1 } }
+        );
 
-      thread.lastPostAt = new Date();
-      await thread.save();
+        thread.lastPostAt = new Date();
+        await thread.save();
 
-      res.status(201).json(newPost);
+        res.status(201).json(newPost);
     } catch (err) {
-      if (!res.headersSent) { // ヘッダーが送信されていない場合のみレスポンスを返す
-        res.status(400).json({ message: err.message });
-      }
+        if (!res.headersSent) { // ヘッダーが送信されていない場合のみレスポンスを返す
+            res.status(400).json({ message: err.message });
+        }
     }
 });
 

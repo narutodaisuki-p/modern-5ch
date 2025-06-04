@@ -3,9 +3,6 @@ const router = express.Router();
 const Category = require('../models/Category');
 const Thread = require('../models/Thread');
 
-
-
-
   // カテゴリを取得
   router.get('/', async (req, res) => {
     try {
@@ -66,4 +63,5 @@ router.get('/:categoryId', async (req, res) => {
     }
   
   });
+  
   module.exports = router;
