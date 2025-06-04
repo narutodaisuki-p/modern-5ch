@@ -59,11 +59,7 @@ router.post("/verify", async (req, res) => {
     if (user.isTokenValid(token)) {
       const newToken = user.generateAuthToken();
       res.status(200).json({ message: 'トークンは有効です。', token: newToken, user });
-      console.log('トークンの検証成功:', {
-        userId: user._id,
-        username: user.name,
-        email: user.email,
-      });
+   
     } else {
       res.status(401).json({ message: 'トークンは無効です。' });
     }
@@ -97,7 +93,8 @@ router.post('/google', async (req, res) => {
       user = new User({
         name,
         email,
-        password: null, // Google認証ではパスワードは不要
+        password: null, // 
+        google: true, // Google認証を使用していることを示すフラグ
       });
       await user.save();
     }

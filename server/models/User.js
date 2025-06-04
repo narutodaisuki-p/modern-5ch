@@ -7,7 +7,13 @@ require('dotenv').config(); // 環境変数の読み込み
 const userSchema = new Schema({
   email: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  password: { type: String, required: true }, // パスワードフィールド
+  password: { 
+    type: String,
+    required: function() {
+      return !this.google; // Google認証を使用していない場合は必須
+    }
+  },
+  google : { type: Boolean, default: false }, // Google認証を使用しているかどうか
   picture: { type: String }, // プロフィール画像のURL
   createdAt: { type: Date, default: Date.now },
 });
