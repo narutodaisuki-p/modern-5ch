@@ -15,7 +15,7 @@ const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // �
 
 app.use('/uploads', express.static('uploads'));
 const allowedOrigins = [
-  'https://modern-5ch.vercel.app',                 // 本番用
+  'https://jappan.vercel.app',                 // 本番用
   'https://modern-5ch-z6g6.vercel.app',            // プレビューや新URL用
   'http://localhost:3000'                          // ローカル開発用（必要なら）
 ];
