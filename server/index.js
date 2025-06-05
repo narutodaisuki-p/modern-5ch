@@ -9,6 +9,7 @@ if (process.env.NODE_ENV !== 'production') {
   console.log("process.env.NODE_ENV is not production, loading .env file");
 }
 
+
 // Cloudinaryの設定
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -31,6 +32,7 @@ const allowedOrigins = [
   'http://localhost:3000'
                            // ローカル開発用（必要なら）
 ];
+
 
 // ミドルウェアの設定
 app.use(cors({

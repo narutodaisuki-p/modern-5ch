@@ -33,6 +33,9 @@ const auth = async (req, res, next) => {
 
     req.user = user;
     req.token = token;
+
+    console.log("authミドルウェア内のリクエストパラメータ:", req.params);
+
     return next();
     
   } catch (err) {
@@ -47,6 +50,7 @@ const auth = async (req, res, next) => {
       error: err.message || '認証に失敗しました',
       isExpired: false
     });
+    return next(err);
   }
 };
 

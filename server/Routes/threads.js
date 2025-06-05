@@ -54,62 +54,71 @@ router.post('/', postLimiter, async (req, res) => {
 router.get('/:threadId/posts', async (req, res) => {
     try {
       const posts = await Post.find({ threadId: req.params.threadId }).sort('number');
-      console.log("posts",posts);
       res.json(posts);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
   });
-  
-  // スレッドに投稿
-router.post('/:threadId/posts', postLimiter, async (req, res) => {
-    try {
-        if (req.body.image) {
-            try {
-                await auth(req, res); // 認証ミドルウェアを適用
-                await fileSizeLimiter(req, res); // ファイルサイズ制限ミドルウェアを適用
-
-                // Cloudinaryに画像をアップロード
-                const result = await cloudinary.uploader.upload(req.body.image);
-                req.body.imageUrl = result.secure_url;
-            } catch (err) {
-                return res.status(400).json({ message: err.message });
+  // 修正案
+router.post('/:threadId/posts',
+    postLimiter, // 最初のミドルウェアとして postLimiter を直接置く
+    // 以前の req.params をコピーしていたミドルウェアを削除
+    // 以前の console.log("ミドルウェア後のリクエストパラメータ:", req.params); のミドルウェアも削除（または必要に応じて残す）
+    auth, // auth ミドルウェアをここに直接追加
+    fileSizeLimiter, // fileSizeLimiter ミドルウェアをここに直接追加
+    async (req, res, next) => {
+        try {
+            console.log("最終ハンドラ開始時のreq.params:", req.params); // デバッグ用
+            // req.body.image のチェックと Cloudinary アップロードはそのまま
+            if (req.body.image) {
+                console.log("画像が含まれています");
+                try {
+                    // auth と fileSizeLimiter はここで呼び出す必要はありません。
+                    // ルート定義の引数として渡しているので、既に実行済みです。
+                    const result = await cloudinary.uploader.upload(req.body.image, {
+                        upload_preset: 'ml_default',
+                    });
+                    req.body.imageUrl = result.secure_url;
+                    console.log("画像アップロード成功:", req.body.imageUrl);
+                } catch (err) {
+                    console.error("画像アップロードエラー:", err);
+                    return next(err);
+                }
             }
-        }
+            const thread = await Thread.findById(req.params.threadId);
+            if (!thread) {
+                return res.status(404).json({ message: 'Thread not found' });
+            }
 
-        const thread = await Thread.findById(req.params.threadId);
-        if (!thread) {
-            return res.status(404).json({ message: 'Thread not found' });
-        }
+            const postsCount = await Post.countDocuments({ threadId: req.params.threadId });
+            console.log(req.body.imageUrl);
+            const post = new Post({
+                threadId: req.params.threadId,
+                number: postsCount + 1,
+                content: req.body.content,
+                name: req.body.name || '名無しさん',
+                imageUrl: req.body.imageUrl || null,
+            });
 
-        const postsCount = await Post.countDocuments({ threadId: req.params.threadId });
+            const newPost = await post.save();
 
-        const post = new Post({
-            threadId: req.params.threadId,
-            number: postsCount + 1,
-            content: req.body.content,
-            name: req.body.name || '名無しさん',
-            imageUrl: req.body.imageUrl || null
-        });
+            // 投稿作成時にpostCountをインクリメント
+            // ここでの params.threadId は req.params.threadId と同じになるはず
+            await Thread.findByIdAndUpdate(
+                req.params.threadId, // ここも req.params.threadId に変更
+                { $inc: { postCount: 1 } }
+            );
 
-        const newPost = await post.save();
+            thread.lastPostAt = new Date();
+            await thread.save();
 
-        // 投稿作成時にpostCountをインクリメント
-        await Thread.findByIdAndUpdate(
-            req.params.threadId,
-            { $inc: { postCount: 1 } }
-        );
-
-        thread.lastPostAt = new Date();
-        await thread.save();
-
-        res.status(201).json(newPost);
-    } catch (err) {
-        if (!res.headersSent) { // ヘッダーが送信されていない場合のみレスポンスを返す
-            res.status(400).json({ message: err.message });
+            res.status(201).json(newPost);
+        } catch (err) {
+            console.error(err);
+            AppError(err, 500, '投稿の作成中にエラーが発生しました');
         }
     }
-});
+);
 
 router.post('/:threadId/posts/:postId/report',postLimiter, Ng, async (req, res) => {
     const { threadId, postId } = req.params;
@@ -159,7 +168,6 @@ router.delete('/:threadId/posts/:postId', async (req, res) => {
         }
 
         await Post.deleteOne({ _id: req.params.postId });
-
         // 投稿削除時にpostCountをデクリメント
         await Thread.findByIdAndUpdate(
             req.params.threadId,

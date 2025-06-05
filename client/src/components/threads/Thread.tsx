@@ -24,7 +24,7 @@ const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: nu
     <Typography variant="body1">{post.content}</Typography>
     {post.imageUrl && (
       <img
-        src={`${URL}${post.imageUrl}`}
+        src={post.imageUrl}
         alt="Post"
         style={{ maxWidth: '100%', marginTop: '10px' }}
       />
@@ -65,19 +65,31 @@ const Thread: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.trim() ) return;
+    if (!newPost.trim()) return;
 
-    const formData = new FormData();
-    formData.append('content', newPost);
-    formData.append('image', selectedFile ?? '');
+    let base64Image = null;
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.readAsDataURL(selectedFile);
+      base64Image = await new Promise<string | null>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+      });
+    }
+
+    const payload = {
+      content: newPost,
+      image: base64Image, // Base64 エンコードされた画像
+    };
 
     try {
       const response = await fetch(`${URL}/api/threads/${threadId}/posts`, {
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('jwt') || ''}`,
         },
         method: 'POST',
-        body: formData,
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error('投稿の送信に失敗しました');
@@ -119,6 +131,10 @@ const Thread: React.FC = () => {
     }
   }, [threadId]);
 
+  const memoizedOnReport = useCallback((postId: number, content: string) => {
+    handleReport(postId, content);
+  }, [handleReport]);
+
   return (
     <Box>
       {error && <ErrorIs message={error} />}
@@ -129,10 +145,11 @@ const Thread: React.FC = () => {
 
       <Box mb={4}>
         {posts.map((post) => (
-          console.log("post",post),
-          <PostItem key={post._id} post={post} onReport={() =>{
-            handleReport(post._id, post.content);
-          }} />
+          <PostItem
+            key={post._id}
+            post={post}
+            onReport={() => memoizedOnReport(post._id, post.content)}
+          />
         ))}
       </Box>
 
@@ -154,7 +171,6 @@ const Thread: React.FC = () => {
           style={{ display: 'block', marginBottom: '10px' }}
           aria-label="画像を選択"
         />
-        {/* 画像を表示 */}
         {selectedFile && (
           <Box sx={{ mb: 2 }}>
             <img
@@ -163,7 +179,6 @@ const Thread: React.FC = () => {
               style={{ maxWidth: '50%', marginTop: '10px' }}
             />
           </Box>
-          
         )}
 
         <Button type="submit" variant="outlined" color="primary">
