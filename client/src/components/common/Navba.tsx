@@ -21,34 +21,47 @@ const Navba = () => {
     };
 
     return (
-        <AppBar position="static" sx={{ mb: 2, width: '100%' }}>
-            <Toolbar>
+        <AppBar position="static" sx={{ mb: 2, width: '100%', backgroundColor: 'transparent', boxShadow: 'none' }}>
+            <Toolbar >
                 <Typography variant="h6" component={Link} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}>
                     じゃっぱん
                 </Typography>
                 <IconButton edge="start" color="inherit" aria-label="menu" onClick={toggleDrawer(true)} sx={{ display: { xs: 'block', sm: 'none' } }}>
                     <MenuIcon />
                 </IconButton>
-                <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
-                    <List>
-                        <ListItem component={Link} to="/create">
+                <Drawer 
+                    anchor="right" 
+                    open={drawerOpen} 
+                    onClose={toggleDrawer(false)} 
+                    PaperProps={{ sx: { backgroundColor: "transparent" } }}
+                >
+                    <List sx={{ backgroundColor: "transparent" }}>
+                        <ListItem component={Link} to="/create" sx={{ color: "primary.main" }}>
                             <ListItemText primary="スレッド作成" />
                         </ListItem>
-                        <ListItem component={Link} to="/categories">
+                        <ListItem component={Link} to="/categories" sx={{ color: "primary.main" }}>
                             <ListItemText primary="カテゴリー" />
                         </ListItem>
-                        <ListItem component={Link} to="/ranking">
+                        <ListItem component={Link} to="/ranking" sx={{ color: "primary.main" }}>
                             <ListItemText primary="ランキング" />
                         </ListItem>
-                        <ListItem component={Link} to="/about">
+                        <ListItem component={Link} to="/about" sx={{ color: "primary.main" }}>
                             <ListItemText primary="このサイトについて" />
                         </ListItem>
-                        <ListItem component={Link} to="/login">
-                            <ListItemText primary="ログイン" />
-                        </ListItem>
-                        <ListItem component={Link} to="/register">
-                            <ListItemText primary="登録" />
-                        </ListItem>
+                        {isLoggedIn ? (
+                            <ListItem component={Link} to="/profile" sx={{ color: "primary.main" }}>
+                                <ListItemText primary="プロフィール" />
+                            </ListItem>
+                        ) : (
+                            <>
+                                <ListItem component={Link} to="/login" sx={{ color: "primary.main" }}>
+                                    <ListItemText primary="ログイン" />
+                                </ListItem>
+                                <ListItem component={Link} to="/register" sx={{ color: "primary.main" }}>
+                                    <ListItemText primary="登録" />
+                                </ListItem>
+                            </>
+                        )}
                     </List>
                 </Drawer>
                 <Button color="primary" component={Link} to="/create" sx={{ fontWeight: 'bold', display: { xs: 'none', sm: 'block' } }}>
@@ -63,7 +76,6 @@ const Navba = () => {
                 <Button color="primary" component={Link} to="/about" sx={{ fontWeight: 'bold', display: { xs: 'none', sm: 'block' } }}>
                     このサイトについて
                 </Button>
-                {/* ログインしているかいないかで表示させるのを変える */}
                 {isLoggedIn ? (
                     <Button color="primary" component={Link} to="/profile" sx={{ fontWeight: 'bold', display: { xs: 'none', sm: 'block' } }}>
                         プロフィール

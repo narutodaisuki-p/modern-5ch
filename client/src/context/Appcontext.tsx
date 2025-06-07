@@ -72,8 +72,6 @@ export const AppProvider: React.FC<{
         console.error('認証エラー:', err);
         setError('認証に失敗しました。再度ログインしてください。');
       });
-
-
     }
   }, []);
 

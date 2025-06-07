@@ -2,22 +2,22 @@ const express = require('express');
 const router = express.Router();
 const Category = require('../models/Category');
 const Thread = require('../models/Thread');
+const AppError = require('../utils/Error');
 
   // カテゴリを取得
-  router.get('/', async (req, res) => {
+  router.get('/', async (req, res, next) => {
     try {
       const categories = await Category.find();
       res.json(categories);
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      next(AppError(err.message || 'カテゴリの取得に失敗しました', 500));
     }
   });
-  router.get('/:categoryId/threads', async (req, res) => {
+  router.get('/:categoryId/threads', async (req, res, next) => {
     try {
       const { categoryId } = req.params;
       const { search, sort, startDate, endDate } = req.query;
 
-      
       // 基本クエリ: カテゴリ指定
       let query = { category: categoryId };
       // キーワード検索
@@ -51,15 +51,15 @@ const Thread = require('../models/Thread');
   });
   
 
-router.get('/:categoryId', async (req, res) => {
+router.get('/:categoryId', async (req, res, next) => {  
     try {
       const category = await Category.findById(req.params.categoryId);
       if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
+        return next(AppError('Category not found', 404));
       }
       res.json(category);
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      next(AppError(err.message || 'カテゴリの取得に失敗しました', 500));
     }
   
   });

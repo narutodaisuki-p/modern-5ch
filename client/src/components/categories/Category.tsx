@@ -25,6 +25,8 @@ interface Thread {
   title: string;
   createdAt: string;
   category: string;
+  likes?: number;
+  imageUrl?: string;
 }
 
 const Category: React.FC = () => {
@@ -187,6 +189,32 @@ const Category: React.FC = () => {
               <Typography variant="h5" gutterBottom>
                 {thread.title}
               </Typography>
+              <Box
+                sx={{
+                  width: '100%',
+                  maxWidth: '300px',
+                  margin: '0 auto',
+                  overflow: 'hidden',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  '& img': {
+                    width: '100%',
+                    height: 'auto',
+                    transition: 'transform 0.3s ease',
+                  },
+                  '&:hover img': {
+                    transform: 'scale(1.05)',
+                  },
+                }}
+              >
+                {thread.imageUrl && (
+                  <img
+                    src={thread.imageUrl}
+                    alt={thread.title}
+                    style={{ width: '100%', height: 'auto' }}
+                  />
+                )}
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 {new Date(thread.createdAt).toLocaleDateString('ja-JP', {
                   year: 'numeric',

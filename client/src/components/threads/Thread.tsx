@@ -41,12 +41,12 @@ const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: nu
 ));
 
 const Thread: React.FC = () => {
-  const { threadId } = useParams();
+  const { threadId } = useParams<{ threadId: string }>();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
   const { setLoading, setError } = useAppContext();
   const [loading, setLoadingState] = useState(true);
-  const [error, setErrorState] = useState<string | null>(null);
+  const [errorState, setErrorState] = useState<string | null>(null); // 修正: setErrorStateの定義
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const loadPosts = useCallback(async () => {
@@ -60,36 +60,30 @@ const Thread: React.FC = () => {
 
   useEffect(() => {
     setLoading(loading);
-    setError(error);
-  }, [loading, error, setLoading, setError]);
+    setErrorState(errorState); // 修正: errorStateを使用
+  }, [loading, errorState, setLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.trim()) return;
 
-    let base64Image = null;
+    const formData = new FormData();
+    formData.append('content', newPost);
     if (selectedFile) {
-      const reader = new FileReader();
-      reader.readAsDataURL(selectedFile);
-      base64Image = await new Promise<string | null>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => resolve(null);
-      });
+      formData.append('image', selectedFile);
     }
 
-    const payload = {
-      content: newPost,
-      image: base64Image, // Base64 エンコードされた画像
-    };
+    console.log('Selected file:', selectedFile);
+    console.log('FormData content:', Array.from(formData.entries()));
 
     try {
       const response = await fetch(`${URL}/api/threads/${threadId}/posts`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwt') || ''}`,
-        },
         method: 'POST',
-        body: JSON.stringify(payload),
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('jwt') || ''}`,
+          // Content-Typeは削除
+        },
+        body: formData,
       });
 
       if (!response.ok) throw new Error('投稿の送信に失敗しました');
@@ -137,11 +131,12 @@ const Thread: React.FC = () => {
 
   return (
     <Box>
-      {error && <ErrorIs message={error} />}
+      {errorState && <ErrorIs message={errorState} />} {/* 修正: errorStateを使用 */}
       {loading && <Typography variant="h6">読み込み中...</Typography>}
       <Typography variant="h4" gutterBottom>
         スレッド #{threadId}
       </Typography>
+      
 
       <Box mb={4}>
         {posts.map((post) => (
@@ -152,7 +147,9 @@ const Thread: React.FC = () => {
           />
         ))}
       </Box>
-
+      <Typography variant="h5" gutterBottom>
+        新しい投稿
+      </Typography>
       <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
         <TextField
           fullWidth

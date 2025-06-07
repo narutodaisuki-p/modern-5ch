@@ -4,6 +4,7 @@ const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
+const AppError = require('../utils/Error');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // 新規登録エンドポイント
@@ -104,7 +105,7 @@ router.post('/google', async (req, res) => {
     res.status(200).json({ message: 'Google認証成功', token });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Google認証に失敗しました' });
+    AppError('Google認証中にエラーが発生しました', 500);
   }
 });
 router.get("/profile", async (req, res) => {

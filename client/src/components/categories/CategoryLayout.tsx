@@ -8,7 +8,7 @@ import Header from '../common/Header';
 const CategoryLayout: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   return (
-    <AppProvider categoryId={categoryId!}>
+    <AppProvider categoryId={categoryId}>
       {/* ここの Header はちゃんと category が取れる */}
       <Header />
       {/* 子 Route (<Category>) がここに出る */}

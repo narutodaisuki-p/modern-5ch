@@ -3,11 +3,11 @@ const User = require('../models/User');
 const AppError = require('../utils/Error');
 
 
-const fileSize = 1024 * 1024 * 5; // 5MB
+const fileSize = 1024 * 1024 * 10; // 10MB
 // ファイルサイズ制限のミドルウェア
 const fileSizeLimiter = (req, res, next) => {
   if (req.file && req.file.size > fileSize) {
-    return AppError('ファイルサイズが大きすぎます。最大5MBまでです。', 413);
+    return AppError('ファイルサイズが大きすぎます。最大10MBまでです。', 413);
   }
   next();
 };

@@ -20,6 +20,7 @@ const CreateThread: React.FC = () => {
   const [content, setContent] = useState('');
   const [categories, setCategories] = useState<Category[] | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [image, setImage] = useState<File | null>(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -44,6 +45,12 @@ const CreateThread: React.FC = () => {
     getCategories(setCategories, setLoading, setError);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImage(e.target.files[0]);
+    }
+  };
+
   // eは使わずonSubmitでpreventDefaultするのでここはシンプルに
   const handleSubmit = async () => {
     setError(null);
@@ -54,10 +61,18 @@ const CreateThread: React.FC = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${URL}/api/threads`, {
-        title,
-        content,
-        category: selectedCategory,
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('content', content);
+      formData.append('category', selectedCategory);
+      if (image) {
+        formData.append('image', image);
+      }
+
+      await axios.post(`${URL}/api/threads`, formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('jwt') || ''}`,
+        },
       });
 
       navigate(`/categories/${selectedCategory}`);
@@ -133,29 +148,37 @@ const CreateThread: React.FC = () => {
               handleSubmit();
             }
           }}
-                />
-                <TextField
-  select
-  fullWidth
-  label="カテゴリー"
-  value={selectedCategory}  //generalのidをデフォルトに設定
-  onChange={(e) => setSelectedCategory(e.target.value)}
-  margin="normal"
-  variant="outlined"
-  disabled={!categories || loading}
->
-  {!categories ? (
-    <MenuItem value="" disabled>
-      読み込み中...
-    </MenuItem>
-  ) : (
-    categories.map((cat) => (
-      <MenuItem key={cat._id} value={cat._id}>
-        {cat.name}
-      </MenuItem>
-    ))
-  )}
-</TextField>
+        />
+        <TextField
+          select
+          fullWidth
+          label="カテゴリー"
+          value={selectedCategory}  //generalのidをデフォルトに設定
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          margin="normal"
+          variant="outlined"
+          disabled={!categories || loading}
+        >
+          {!categories ? (
+            <MenuItem value="" disabled>
+              読み込み中...
+            </MenuItem>
+          ) : (
+            categories.map((cat) => (
+              <MenuItem key={cat._id} value={cat._id}>
+                {cat.name}
+              </MenuItem>
+            ))
+          )}
+        </TextField>
+        <TextField
+          type="file"
+          fullWidth
+          onChange={handleImageChange}
+          margin="normal"
+          variant="outlined"
+          inputProps={{ accept: 'image/*' }}
+        />
         <Box sx={{ mt: 2 }}>
           <Button type="submit" variant="outlined" size="large">
             スレッドを作成

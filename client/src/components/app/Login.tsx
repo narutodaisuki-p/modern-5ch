@@ -5,11 +5,14 @@ import { TextField, Button, Typography, Container } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import { useAppContext } from '../../context/Appcontext';
+import { set } from 'date-fns';
+import ErrorIs from '../common/Error';
 const URL = process.env.REACT_APP_API_URL;
 
 const Login = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { setIsLoggedIn } = useAppContext();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const jwt = localStorage.getItem('jwt');
@@ -35,6 +38,7 @@ const Login = () => {
         })
         .catch((error) => {
           console.error('認証エラー:', error);
+          setError(error.message);
           setIsAuthenticated(false); // 認証失敗
         });
     }
@@ -42,29 +46,6 @@ const Login = () => {
 
   if (isAuthenticated) {
     return <Navigate to="/profile" replace />;
-  }
-
-  if (isAuthenticated) {
-    return (
-      <>
-        <Container maxWidth="lg">
-          <Typography variant="body1" align="center">
-            あなたは既にログインしています。プロフィールに移動するか、ログアウトしてください。
-          </Typography>
-        </Container>
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Button variant="contained" color="primary" component={Link} to="/profile">
-            プロフィールへ
-          </Button>
-          <Button variant="outlined" color="secondary" onClick={() => {
-            localStorage.removeItem('jwt');
-            setIsAuthenticated(false);
-          }} sx={{ ml: 2 }}>
-            ログアウト
-          </Button>
-        </Box>
-      </>
-    );
   }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

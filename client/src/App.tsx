@@ -25,6 +25,7 @@ import Register from './components/app/Register';
 import Profile from './components/app/Profile'; // プロフィールページのインポート
 import Terms from './components/app/Terms';
 
+
 const theme = createTheme({
   palette: {
     mode: 'dark',
@@ -42,6 +43,7 @@ const theme = createTheme({
     background: {
       default: '#121212',
       paper: '#1e1e1e',
+     
     },
   },
   typography: {

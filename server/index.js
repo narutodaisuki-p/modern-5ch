@@ -8,6 +8,7 @@ const cloudinary = require('cloudinary').v2;
 if (process.env.NODE_ENV !== 'production') {
   console.log("process.env.NODE_ENV is not production, loading .env file");
 }
+const multer = require('multer');
 
 
 // Cloudinaryの設定
@@ -26,12 +27,18 @@ const ThreadRoutes = require('./Routes/threads');
 // const ShopRoutes = require('./Routes/shop'); // ショップ関連のルートをインポート
 const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // レートリミッターをインポート
 
+
 const allowedOrigins = [
   'https://jappan.vercel.app',                 // 本番用
   'https://modern-5ch-z6g6.vercel.app',            // プレビューや新URL用
   'http://localhost:3000'
-                           // ローカル開発用（必要なら）
 ];
+
+
+// multerの設定
+const upload = multer({
+  storage: multer.memoryStorage(),
+});
 
 
 // ミドルウェアの設定
@@ -40,6 +47,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.use(upload.single('image')); // 画像アップロード用のフィールド名を指定
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1); // リバースプロキシを信頼
@@ -101,7 +109,7 @@ app.use('/api/threads', ThreadRoutes); // スレッド関連のルートを使�
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Internal Server Error' });
+  res.status(500).json({ message: err.message || 'Internal Server Error' });
 });
 
 

@@ -9,7 +9,8 @@ const postSchema = new Schema({
   name: { type: String, default: '名無しさん' },
   createdAt: { type: Date, default: Date.now },
   imageUrl: { type: String, default: null },
-  imagePath: { type: String, default: null }
+  imagePath: { type: String, default: null },
+  likes: { type: Number, default: 0 } // いいね数を追加
 });
 
 module.exports = mongoose.model('Post', postSchema);

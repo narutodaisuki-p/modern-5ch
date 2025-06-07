@@ -1,26 +1,65 @@
-import React from 'react'
-import { Box, TextField, Button, Typography } from '@mui/material'
-import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google'
-import ErrorTag from '../common/Error'
-import Success from '../common/Success'
-import { useAppContext } from '../../context/Appcontext'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { Box, TextField, Button, Typography, CircularProgress } from '@mui/material';
+import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import ErrorTag from '../common/Error';
+import Success from '../common/Success';
+import { useAppContext } from '../../context/Appcontext';
+import { Navigate } from 'react-router-dom';
+import Loading from '../common/Loading';
+
 const URL = process.env.REACT_APP_API_URL;
 
 interface RegisterGoogleResponse {
-  message: string
-  token?: string
+  message: string;
+  token?: string;
 }
 
+
 const Register = () => {
-  const [error, setError] = React.useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const { setIsLoggedIn } = useAppContext();
-  const navigate = useNavigate();
+  useEffect(() => {
+    const verifyToken = async () => {
+      const jwt = localStorage.getItem('jwt');
+      if (!jwt) return;
+
+      setLoading(true);
+      try {
+        const response = await fetch(`${URL}/auth/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: jwt }),
+        });
+
+        if (!response.ok) {
+          throw new Error('認証に失敗しました');
+        }
+
+        const data = await response.json();
+        setIsAuthenticated(true);
+        setIsLoggedIn(true);
+      } catch (error: any) {
+        console.error('認証エラー:', error);
+        setError(error.message);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyToken();
+  }, []);
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    setLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+
     try {
-      // Send the credential to your backend
       const res = await fetch(`${URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,22 +68,24 @@ const Register = () => {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Google registration failed");
+        throw new Error(errorData.message || 'Google登録に失敗しました');
       }
 
-      const data: RegisterGoogleResponse = await res.json()
-      setSuccessMessage(data.message || "Google registration successful")
-      if (data.token) localStorage.setItem("jwt", data.token)
+      const data: RegisterGoogleResponse = await res.json();
+      setSuccessMessage(data.message || 'Google登録成功');
+      if (data.token) localStorage.setItem('jwt', data.token);
       setIsLoggedIn(true);
-      navigate("/");
+      <Navigate to="/" replace />;
     } catch (err: any) {
-      setError(err.message || "Google registration failed")
+      setError(err.message || 'Google登録に失敗しました');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   const handleGoogleError = () => {
-    setError('Google registration failed')
-  }
+    setError('Google登録に失敗しました');
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -52,7 +93,7 @@ const Register = () => {
     setSuccessMessage(null);
 
     const formData = new FormData(e.currentTarget);
-    const username = formData.get("username")?.toString() || "";
+    const username = formData.get('username')?.toString() || '';
     const email = formData.get('email')?.toString() || '';
     const password = formData.get('password')?.toString() || '';
 
@@ -62,12 +103,12 @@ const Register = () => {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     if (!emailRegex.test(email)) {
-      setError("有効なメールアドレスを入力してください");
+      setError('有効なメールアドレスを入力してください');
       return;
     }
 
+    setLoading(true);
     try {
       const res = await fetch(`${URL}/auth/register`, {
         method: 'POST',
@@ -77,22 +118,30 @@ const Register = () => {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "登録に失敗しました");
+        throw new Error(errorData.message || '登録に失敗しました');
       }
-      const data: RegisterGoogleResponse = await res.json()
-      setSuccessMessage(data.message || "登録成功")
-      if (data.token) localStorage.setItem("jwt", data.token)
+
+      const data: RegisterGoogleResponse = await res.json();
+      setSuccessMessage(data.message || '登録成功');
+      if (data.token) localStorage.setItem('jwt', data.token);
       setIsLoggedIn(true);
-    
     } catch (err: any) {
-      setError(err.message || "登録に失敗しました")
+      setError(err.message || '登録に失敗しました');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  if (isAuthenticated) {
+    return <Navigate to="/profile" replace />;
   }
 
   return (
     <Box sx={{ maxWidth: '400px', mx: 'auto', mt: 4 }}>
       {error && <ErrorTag message={error} />}
       {successMessage && <Success message={successMessage} />}
+      {loading && <Loading />}
+
       <form onSubmit={handleSubmit}>
         <Typography variant="h4" align="center" gutterBottom>
           新規登録
@@ -102,7 +151,7 @@ const Register = () => {
           variant="outlined"
           fullWidth
           margin="normal"
-          name='username'
+          name="username"
           required
         />
         <TextField
@@ -111,7 +160,7 @@ const Register = () => {
           fullWidth
           margin="normal"
           type="email"
-          name='email'
+          name="email"
           required
         />
         <TextField
@@ -120,7 +169,7 @@ const Register = () => {
           fullWidth
           margin="normal"
           type="password"
-          name='password'
+          name="password"
           required
         />
 
@@ -130,6 +179,7 @@ const Register = () => {
           fullWidth
           type="submit"
           sx={{ mt: 2 }}
+          disabled={loading}
         >
           登録
         </Button>
@@ -154,7 +204,7 @@ const Register = () => {
         <a href="/terms">利用規約</a>に同意する必要があります。
       </Typography>
     </Box>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

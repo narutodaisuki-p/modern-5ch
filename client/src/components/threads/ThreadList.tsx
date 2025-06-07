@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Typography, Paper, List, ListItem, ListItemText, Button } from '@mui/material';
 import axios from 'axios';
@@ -10,6 +10,8 @@ interface Thread {
   _id: string;
   title: string;
   createdAt: string;
+  imageUrl?: string;
+  likes?: number;
 }
 
 const ThreadList: React.FC = () => {
@@ -30,6 +32,25 @@ const ThreadList: React.FC = () => {
         setLoading(false);
       });
   }, []);
+  useEffect(() => {
+    if (error) {
+      alert(error);
+      setError(null); // エラーを表示したらリセット
+    }
+  }, [threads]);
+
+  const handleLike = async (threadId: string) => {
+    try {
+      const response = await axios.post(`${URL}/api/threads/${threadId}/like`);
+      setThreads((prevThreads) =>
+        prevThreads.map((thread) =>
+          thread._id === threadId ? { ...thread, likes: response.data.likes } : thread
+        )
+      );
+    } catch (error) {
+      console.error('いいね処理に失敗しました:', error);
+    }
+  };
 
   return (
     <Box>
@@ -58,9 +79,36 @@ const ThreadList: React.FC = () => {
                 },
               }}
             >
+              {/* 画像 */}
+              <Box
+                sx={{
+                  width: '100%',
+                  maxWidth: '300px',
+                  margin: '0 auto',
+                  overflow: 'hidden',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  '& img': {
+                    width: '100%',
+                    height: 'auto',
+                    transition: 'transform 0.3s ease',
+                  },
+                  '&:hover img': {
+                    transform: 'scale(1.05)',
+                  },
+                }}
+              >
+                {thread.imageUrl && (
+                  <img
+                    src={thread.imageUrl}
+                    alt={thread.title}
+                  />
+                )}
+              </Box>
               <ListItemText
                 primary={thread.title}
                 secondary={new Date(thread.createdAt).toLocaleString()}
+  
                 sx={{
                     '& .MuiTypography-root': {
         color: 'text.primary', // タイトルの色
@@ -72,6 +120,12 @@ const ThreadList: React.FC = () => {
                 }}
               />
             </ListItem>
+
+              <Button onClick={() => handleLike(thread._id)}
+                sx={{ ml: 2, color: 'primary.main', backgroundColor: 'rgba(241, 15, 241, 0.1)' }}
+              >
+                ❤️ {thread.likes || 0} いいね
+              </Button>
           </Paper>
         ))}
       </List>
@@ -79,4 +133,4 @@ const ThreadList: React.FC = () => {
   );
 };
 
-export default ThreadList; 
+export default ThreadList;
