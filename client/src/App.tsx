@@ -24,6 +24,7 @@ import Login from './components/app/Login';
 import Register from './components/app/Register';
 import Profile from './components/app/Profile'; // プロフィールページのインポート
 import Terms from './components/app/Terms';
+import NotFound from './components/common/NotFound';
 
 
 const theme = createTheme({
@@ -80,6 +81,7 @@ function MainContent() {
         <Route element={<CategoryLayout />}>
           <Route path="/categories/:categoryId" element={<Category />} />
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Container>
   );

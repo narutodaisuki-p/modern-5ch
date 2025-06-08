@@ -21,11 +21,13 @@
     "express-rate-limit": "^7.5.0",
     "google-auth-library": "^9.15.1",
     "helmet": "^8.1.0",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.29.4",
     "mongoose": "^7.5.0",
     "multer": "^2.0.1",
     "openai": "^4.103.0",
+    "sanitize-html": "^2.17.0",
     "stripe": "^18.1.1"
   },
   "devDependencies": {

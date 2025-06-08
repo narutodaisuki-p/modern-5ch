@@ -11,19 +11,21 @@ const Header: React.FC = () => {
   return (
     <AppBar position="static" sx={{ mb: 2,width: '100%' }}>
       <Toolbar>
-        <Typography
-          variant="h6"
-          component={RouterLink}
-          to="/"
-          sx={{
-            flexGrow: 1,
-            textDecoration: 'none',
-            color: 'inherit',
-            fontWeight: 'bold'
-          }}
-        >
-          じゃっぱん
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+          <img src={`${process.env.PUBLIC_URL}/logo.svg`} alt="ロゴ" style={{ height: '40px', marginRight: '10px' }} />
+          <Typography
+            variant="h6"
+            component={RouterLink}
+            to="/"
+            sx={{
+              textDecoration: 'none',
+              color: 'inherit',
+              fontWeight: 'bold'
+            }}
+          >
+            じゃっぱん
+          </Typography>
+        </Box>
         <Box>
           <Button
             color="primary"
@@ -44,4 +46,4 @@ const Header: React.FC = () => {
   );
 };
 
-export default Header; 
+export default Header;

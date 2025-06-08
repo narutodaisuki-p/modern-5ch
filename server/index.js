@@ -9,6 +9,8 @@ if (process.env.NODE_ENV !== 'production') {
   console.log("process.env.NODE_ENV is not production, loading .env file");
 }
 const multer = require('multer');
+const helmet = require('helmet');
+const Joi = require('joi');
 
 
 // Cloudinaryの設定
@@ -50,6 +52,7 @@ app.use(cors({
 app.use(upload.single('image')); // 画像アップロード用のフィールド名を指定
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
 app.set('trust proxy', 1); // リバースプロキシを信頼
 
 // MongoDBの接続
@@ -111,7 +114,6 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: err.message || 'Internal Server Error' });
 });
-
 
 
 const PORT = process.env.PORT || 5000;

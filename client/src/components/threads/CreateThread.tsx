@@ -118,7 +118,7 @@ const CreateThread: React.FC = () => {
       >
         <TextField
           fullWidth
-          label="スレッドタイトル"
+          label="スレッドタイトル(3文字以上100文字以下)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           margin="normal"

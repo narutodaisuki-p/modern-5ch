@@ -41,14 +41,25 @@ const ThreadList: React.FC = () => {
 
   const handleLike = async (threadId: string) => {
     try {
-      const response = await axios.post(`${URL}/api/threads/${threadId}/like`);
+      const token = localStorage.getItem('jwt'); // ローカルストレージからトークンを取得
+      if (!token) {
+        alert('ログインしてください。');
+        return;
+      }
+      const response = await axios.post(`${URL}/api/threads/${threadId}/like`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setThreads((prevThreads) =>
         prevThreads.map((thread) =>
           thread._id === threadId ? { ...thread, likes: response.data.likes } : thread
         )
       );
     } catch (error) {
-      console.error('いいね処理に失敗しました:', error);
+      const err = error as any; // 型アサーションを使用してエラーを処理
+      console.error('いいね処理に失敗しました:', err);
+      alert(err.response?.data?.message || 'いいね処理中にエラーが発生しました');
     }
   };
 

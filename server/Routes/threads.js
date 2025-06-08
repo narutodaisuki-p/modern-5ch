@@ -8,17 +8,42 @@ const Ng = require('../middleware/Ng');
 const {auth, fileSizeLimiter} = require('../middleware/auth');
 const AppError = require('../utils/Error');
 const cloudinary = require('cloudinary').v2; // Cloudinaryをインポート
+const {validate,customJoi} = require('../middleware/validate');
+const Joi = require('joi');
+
+const threadSchema = Joi.object({
+  title: customJoi.string().trim().min(3).max(100).required(),
+  category: customJoi.string().trim().optional(),
+  content: customJoi.string().trim().min(1).required(),
+  name: customJoi.string().trim().optional(),
+});
+
+const postSchema = Joi.object({
+  content: customJoi.string().trim().min(1).required(),
+  name: customJoi.string().trim().optional(),
+});
+
+const threadIdSchema = Joi.object({
+  threadId: Joi.string().trim().required(),
+});
+
+const postIdSchema = Joi.object({
+  threadId: Joi.string().trim().required(),
+  postId: Joi.string().trim().required(),
+});
+
+
 router.get('/', async (req, res, next) => {
     try {
       const threads = await Thread.find().sort({ lastPostAt: -1 });
       res.json(threads);
     } catch (err) {
-      return next(AppError(err.message || 'スレッドの取得に失敗しました', 500));
+      return next(new AppError(err.message || 'スレッドの取得に失敗しました', 500));
     }
   });
   
   // 新しいスレッドを作成
-router.post('/', postLimiter, async (req, res, next) => {
+router.post('/', postLimiter, validate(threadSchema), async (req, res, next) => {
     console.log("スレッド作成リクエスト:", req.body);
     try {
         let imageUrl = null;
@@ -92,6 +117,7 @@ router.post('/:threadId/posts',
     postLimiter,
     auth,
     fileSizeLimiter, // Multerを適用
+    validate(postSchema), // Joi検証を追加
     async (req, res, next) => {
         try {
             let imageUrl = null;
@@ -175,7 +201,7 @@ router.post('/:threadId/posts/:postId/report', postLimiter, Ng, async (req, res,
 });
 
 // スレッド削除時にカテゴリのスレッド数を更新
-router.delete('/:threadId', async (req, res) => {
+router.delete('/:threadId', validate(threadIdSchema), async (req, res, next) => {
     try {
         const thread = await Thread.findById(req.params.threadId);
         if (!thread) {
@@ -197,7 +223,7 @@ router.delete('/:threadId', async (req, res) => {
 });
 
 // 投稿削除
-router.delete('/:threadId/posts/:postId', async (req, res) => {
+router.delete('/:threadId/posts/:postId', validate(postIdSchema), async (req, res, next) => {
     try {
         const post = await Post.findById(req.params.postId);
         if (!post) {
@@ -218,14 +244,20 @@ router.delete('/:threadId/posts/:postId', async (req, res) => {
 });
 
 // いいね機能
-router.post('/:threadId/like', async (req, res, next) => {
+router.post('/:threadId/like', auth, async (req, res, next) => {
     try {
         const thread = await Thread.findById(req.params.threadId);
         if (!thread) {
             return next(new AppError('スレッドが見つかりません', 404));
         }
 
+        // ユーザーがすでにいいねしているか確認
+        if (thread.likesBy.includes(req.user.id)) {
+            return res.status(400).json({ message: 'すでにいいねしています' });
+        }
+
         thread.likes += 1; // いいね数を増加
+        thread.likesBy.push(req.user.id); // ユーザーIDをlikesByに追加
         await thread.save();
 
         res.status(200).json({ message: 'いいねしました', likes: thread.likes });

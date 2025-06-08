@@ -134,7 +134,7 @@ const Thread: React.FC = () => {
       {errorState && <ErrorIs message={errorState} />} {/* 修正: errorStateを使用 */}
       {loading && <Typography variant="h6">読み込み中...</Typography>}
       <Typography variant="h4" gutterBottom>
-        スレッド #{threadId}
+        スレッド ログインしてないなら画像投稿はできません
       </Typography>
       
 
@@ -158,6 +158,7 @@ const Thread: React.FC = () => {
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
           placeholder="投稿内容を入力してください"
+          required
           variant="outlined"
           sx={{ mb: 2 }}
         />
