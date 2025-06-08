@@ -31,24 +31,26 @@ const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#90ca9f',
+      main: '#26c6da',
       contrastText: '#fff',
     },
     text: {
-      primary: '#f5f5f5',
-      secondary: '#b0bec5',
+      primary: '#e0f7fa',
+      secondary: '#80cbc4',
     },
     secondary: {
-      main: '#757575',
+      main: '#43a047',
     },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
-     
+      default: '#16232d',
+      paper: '#1a2633',
     },
   },
   typography: {
     fontFamily: [
+      '"Noto Sans JP"',
+      '"Noto Sans"',
+      'monospace',
       '-apple-system',
       'BlinkMacSystemFont',
       '"Segoe UI"',
@@ -57,6 +59,62 @@ const theme = createTheme({
       'Arial',
       'sans-serif',
     ].join(','),
+    fontWeightBold: 900,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          fontWeight: 700,
+          letterSpacing: 2,
+          textTransform: 'none',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          background: 'linear-gradient(120deg, #16232d 60%, #1a2e2e 100%)',
+          borderRadius: 16,
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          // AppBarのsxで直接指定するためここは省略
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          background: '#1a2633',
+          color: '#26c6da',
+          borderRadius: 8,
+        },
+        notchedOutline: {
+          borderColor: '#26c6da',
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: '#26c6da',
+          fontWeight: 700,
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          color: '#26c6da',
+          '&:hover': { color: '#43a047', background: '#16232d' },
+        },
+      },
+    },
   },
 });
 

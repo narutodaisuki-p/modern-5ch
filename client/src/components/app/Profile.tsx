@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Typography, Avatar, Box } from '@mui/material';
+import Loadingis from '../common/Loading';
 const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const Profile = () => {
@@ -48,7 +49,7 @@ const Profile = () => {
     };
 
     if (loading) {
-        return <Typography>読み込み中...</Typography>;
+        return <Loadingis />;
     }
 
     return (

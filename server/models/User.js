@@ -16,6 +16,7 @@ const userSchema = new Schema({
   google : { type: Boolean, default: false }, // Google認証を使用しているかどうか
   picture: { type: String }, // プロフィール画像のURL
   createdAt: { type: Date, default: Date.now },
+  rank: { type: String, default: '下忍' , enum: ['下忍', '中忍', '上忍'] }, // ユーザーのランク
 });
 
 // パスワードを検証するメソッド
