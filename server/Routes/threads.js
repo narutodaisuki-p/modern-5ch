@@ -112,30 +112,48 @@ router.get('/:threadId/posts', async (req, res, next) => {
       return next(new AppError(err.message || '投稿の取得に失敗しました', 500));
     }
   });
-  // 修正案
+  // 修正案: req.paramsの保持とエラーハンドリングの改善
 router.post('/:threadId/posts',
     postLimiter,
-    fileSizeLimiter, // Multerを適用
-    validate(postSchema), // Joi検証を追加
-
-
+    validate(postSchema),
     async (req, res, next) => {
         try {
+            // 画像がある場合のみ認証必須
+            if (req.file) {
+                if (!req.headers.authorization) {
+                    return res.status(401).json({ message: '画像投稿にはログインが必要です' });
+                }
+                let authError = null;
+                await auth(req, res, (err) => { if (err) authError = err; });
+                if (authError) {
+                    return res.status(401).json({ message: '認証エラー: 画像投稿にはログインが必要です' });
+                }
+            }
+            console.log('リクエスト開始時のreq.params:', req.params);
+            console.log('リクエスト開始時のreq.body:', req.body);
+            console.log('リクエスト開始時のreq.file:', req.file);
+
+            const originalParams = { ...req.params }; // req.paramsを保持
             let imageUrl = null;
-            console.log("投稿リクエスト:", req.body);
-            console.log("アップロードされたファイル:", req.file); // req.fileの内容をログに出力
 
             if (req.file) {
                 try {
-                    auth(); // 認証ミドルウェアを適用
+                    console.log("認証前 req.params:", req.params);
+                
+                    console.log("認証後 req.params:", req.params);
+                    req.params = { ...originalParams }; // 認証後にreq.paramsを復元
+
                     const uploadToCloudinary = (fileBuffer) => {
                         return new Promise((resolve, reject) => {
                             const stream = cloudinary.uploader.upload_stream({
                                 resource_type: 'image',
                                 folder: 'posts',
+                                invalidate: true, // キャッシュを無効化
                             }, (error, result) => {
                                 if (error) {
-                                    return reject(error);
+                                    console.error("Cloudinaryエラー詳細:", error);
+                                    reject(new AppError('Cloudinaryアップロードエラー', 500));
+                                    return;
                                 }
                                 resolve(result);
                             });
@@ -143,18 +161,37 @@ router.post('/:threadId/posts',
                         });
                     };
 
-                    const result = await uploadToCloudinary(req.file.buffer);
-                    imageUrl = result.secure_url;
-                    console.log('Cloudinary upload success:', imageUrl);
+                    try {
+                        console.log("Cloudinaryアップロード前 req.params:", req.params);
+                        const result = await uploadToCloudinary(req.file.buffer);
+                        console.log("Cloudinaryアップロード後 req.params:", req.params);
+                        req.params = { ...originalParams }; // Cloudinaryアップロード後にreq.paramsを復元
+                        imageUrl = result.secure_url;
+                        console.log('Cloudinary upload success:', imageUrl);
+                    } catch (err) {
+                        console.error('Cloudinary upload error:', err);
+                        if (!res.headersSent) {
+                            next(new AppError('画像のアップロードに失敗しました', 500));
+                        }
+                        return; // next()後は必ずreturn
+                    }
                 } catch (err) {
                     console.error('Cloudinary upload error:', err);
-                    return next(new AppError('画像のアップロードに失敗しました', 400));
+                    if (!res.headersSent) {
+                        next(err);
+                    }
+                    return; // next()後は必ずreturn
                 }
+            } else {
+                console.log("ファイルがアップロードされていなかったため、認証をスキップします。");
             }
 
             const thread = await Thread.findById(req.params.threadId);
             if (!thread) {
-                return next(new AppError('スレッドが見つかりません', 404));
+                if (!res.headersSent) {
+                    next(new AppError('スレッドが見つかりません', 404));
+                }
+                return; // next()後は必ずreturn
             }
 
             const postsCount = await Post.countDocuments({ threadId: req.params.threadId });
@@ -176,16 +213,21 @@ router.post('/:threadId/posts',
 
             thread.lastPostAt = new Date();
             await thread.save();
-
             res.status(201).json(newPost);
+            return; // レスポンス送信後はreturn
         } catch (err) {
+            console.error("エラー発生時のreq.params:", req.params);
             console.error(err);
-            return next(new AppError(err.message || '投稿の作成中にエラーが発生しました', 500));
+            if (!res.headersSent) {
+                next(new AppError(err.message || '投稿の作成中にエラーが発生しました', 500));
+            }
+            return; // next()後は必ずreturn
         }
     }
 );
 
 router.post('/:threadId/posts/:postId/report', postLimiter, Ng, async (req, res, next) => {
+    console.log("リクエスト開始時のreq.params:", req.params);
     const { threadId, postId } = req.params;
 
     try {
@@ -197,6 +239,7 @@ router.post('/:threadId/posts/:postId/report', postLimiter, Ng, async (req, res,
         await Post.deleteOne({ _id: postId });
         res.status(200).json({ message: '投稿が削除されました' });
     } catch (error) {
+        console.error("エラー発生時のreq.params:", req.params);
         console.error(error);
         return next(new AppError('報告処理中にエラーが発生しました', 500));
     }
@@ -220,7 +263,13 @@ router.delete('/:threadId', validate(threadIdSchema), async (req, res, next) => 
 
         res.status(200).json({ message: 'スレッドが削除されました' });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error("エラー発生時のreq.params:", req.params);
+        console.error(err);
+        if (res.headersSent) {
+            console.error("レスポンスがすでに送信されています。エラーハンドリングをスキップします。");
+            return;
+        }
+        next(new AppError(err.message || 'スレッド削除中にエラーが発生しました', 500));
     }
 });
 
@@ -229,7 +278,7 @@ router.delete('/:threadId/posts/:postId', validate(postIdSchema), async (req, re
     try {
         const post = await Post.findById(req.params.postId);
         if (!post) {
-            return res.status(404).json({ message: '投稿が見つかりません' });
+            return next(new AppError('投稿が見つかりません', 404));
         }
 
         await Post.deleteOne({ _id: req.params.postId });
@@ -241,7 +290,13 @@ router.delete('/:threadId/posts/:postId', validate(postIdSchema), async (req, re
 
         res.status(200).json({ message: '投稿が削除されました' });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error("エラー発生時のreq.params:", req.params);
+        console.error(err);
+        if (res.headersSent) {
+            console.error("レスポンスがすでに送信されています。エラーハンドリングをスキップします。");
+            return;
+        }
+        next(new AppError(err.message || '投稿削除中にエラーが発生しました', 500));
     }
 });
 

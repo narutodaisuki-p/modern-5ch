@@ -15,11 +15,15 @@ const Joi = require('joi');
 
 // Cloudinaryの設定
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'default_cloud_name',
+  api_key: process.env.CLOUDINARY_API_KEY || 'default_api_key',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'default_api_secret',
   secure: true // HTTPSを使用する場合はtrue
 });
+
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.error("Cloudinaryの環境変数が正しく設定されていません。\nCLOUDINARY_CLOUD_NAME: ", process.env.CLOUDINARY_CLOUD_NAME, "\nCLOUDINARY_API_KEY: ", process.env.CLOUDINARY_API_KEY, "\nCLOUDINARY_API_SECRET: ", process.env.CLOUDINARY_API_SECRET);
+}
 
 
 const app = express();
@@ -109,11 +113,21 @@ app.use('/auth', auth); // 認証関連のルートを使用
 app.use('/api/categories', CategoryRoutes);
 app.use('/api/threads', ThreadRoutes); // スレッド関連のルートを使用
 // app.use('/api/shop', ShopRoutes); // ショップ関連のルートを使用
-
 app.use((err, req, res, next) => {
   console.error(err.stack);
+
+  if (res.headersSent) {
+    return next(err); // すでに送信されてたらスルーする
+  }
+
+  if (err.isJoi) {
+    return res.status(400).json({ message: err.details[0].message });
+  }
+
+  console.error("Error in middleware:", err);
   res.status(500).json({ message: err.message || 'Internal Server Error' });
 });
+
 
 
 const PORT = process.env.PORT || 5000;

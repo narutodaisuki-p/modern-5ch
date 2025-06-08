@@ -14,6 +14,7 @@ const fileSizeLimiter = (req, res, next) => {
 
 const auth = async (req, res, next) => {
   try {
+    console.log("authミドルウェア開始時のreq.params:", req.params);
     const token = req.header('Authorization')?.replace('Bearer ', '');
     console.log("authミドルウェア内のトークン:", token);
     if (!token) {
@@ -25,10 +26,17 @@ const auth = async (req, res, next) => {
       return next(new AppError('不正なトークン形式です', 400));
     }
 
+    // JWT_SECRETが存在しない場合のエラーハンドリング
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRETが設定されていません。環境変数を確認してください。");
+      return next(new AppError('サーバーエラー: JWT_SECRETが設定されていません', 500));
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
 
     if (!user) {
+      console.error("ユーザーが見つかりません。トークンのID:", decoded.id);
       return next(new AppError('ユーザーが見つかりません', 404));
     }
 
@@ -39,24 +47,13 @@ const auth = async (req, res, next) => {
 
     req.user = user;
     req.token = token;
+    console.log("authミドルウェア終了時のreq.params:", req.params);
     return next();
-  } catch (err) {
-    if (res.headersSent) {
-      console.error('エラー処理中にヘッダーがすでに送信されています:', err);
-      return;
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(new AppError('トークンの検証に失敗しました', 401));
     }
-
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        error: 'トークンの有効期限が切れています',
-        isExpired: true 
-      });
-    }
-    console.error('認証エラー:', err);
-    res.status(err.statusCode || 401).json({ 
-      error: err.message || '認証に失敗しました',
-      isExpired: false
-    });
+    next(error);
   }
 };
 

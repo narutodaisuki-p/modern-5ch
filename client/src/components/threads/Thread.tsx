@@ -6,7 +6,7 @@ import { useAppContext } from '../../context/Appcontext';
 import ErrorIs from '../common/Error';
 import { ht } from 'date-fns/locale';
 
-const URL = process.env.REACT_APP_API_URL || 'https://localhost:5000';
+const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 interface Post {
   _id: number;
   content: string;
@@ -85,6 +85,7 @@ const Thread: React.FC = () => {
         },
         body: formData,
       });
+      console.log('Response status:', response.status);
 
       if (!response.ok) throw new Error('投稿の送信に失敗しました');
 
@@ -94,7 +95,7 @@ const Thread: React.FC = () => {
       setSelectedFile(null);
     } catch (error) {
       console.error(error);
-      setErrorState('投稿の送信に失敗しました');
+      setErrorState(error instanceof Error ? error.message : '投稿の送信に失敗しました');
       setTimeout(() => setErrorState(null), 3000);
     }
   };
