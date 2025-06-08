@@ -115,9 +115,10 @@ router.get('/:threadId/posts', async (req, res, next) => {
   // 修正案
 router.post('/:threadId/posts',
     postLimiter,
-    auth,
     fileSizeLimiter, // Multerを適用
     validate(postSchema), // Joi検証を追加
+
+
     async (req, res, next) => {
         try {
             let imageUrl = null;
@@ -126,6 +127,7 @@ router.post('/:threadId/posts',
 
             if (req.file) {
                 try {
+                    auth(); // 認証ミドルウェアを適用
                     const uploadToCloudinary = (fileBuffer) => {
                         return new Promise((resolve, reject) => {
                             const stream = cloudinary.uploader.upload_stream({
