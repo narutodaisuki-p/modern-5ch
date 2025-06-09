@@ -29,7 +29,7 @@ cloudinary.config({
 });
 
 if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-  console.error("Cloudinaryの環境変数が正しく設定されていません。\nCLOUDINARY_CLOUD_NAME: ", process.env.CLOUDINARY_CLOUD_NAME, "\nCLOUDINARY_API_KEY: ", process.env.CLOUDINARY_API_KEY, "\nCLOUDINARY_API_SECRET: ", process.env.CLOUDINARY_API_SECRET);
+  console.warn('Cloudinaryの環境変数が設定されていません。画像アップロード機能は無効になります。');
 }
 
 
