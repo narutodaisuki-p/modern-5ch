@@ -353,7 +353,7 @@ const Navbar = () => {
                     font-weight: 700;
                     color: #fff;
                     text-shadow: 0 1px 4px rgba(34, 34, 34, 0.8);
-                    font-family: serif;
+                    font-family: 'Noto Sans JP', 'Noto Sans', monospace, sans-serif;
                     transition: color 0.2s ease;
                 }
 

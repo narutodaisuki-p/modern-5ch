@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Paper, TextField, Button } from '@mui/material';
-import { fetchPosts } from '../../api/apiClinet';
+import { Box, Typography, Paper, TextField } from '@mui/material';
+import { fetchPosts } from '../../api/apiClient';
 import { useAppContext } from '../../context/Appcontext';
 import ErrorIs from '../common/Error';
+import NinjaHackerButton from '../common/NinjaHackerButton';
 import { ht } from 'date-fns/locale';
 
 const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -29,14 +30,13 @@ const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: nu
         style={{ maxWidth: '100%', marginTop: '10px' }}
       />
     )}
-    <Button
+    <NinjaHackerButton
+      label="報告する"
       variant="outlined"
       color="error"
-      sx={{ ml: 2 }}
+      sx={{ ml: 2, fontFamily: '"Noto Sans JP", "Noto Sans", monospace' }}
       onClick={() => onReport(post._id)}
-    >
-      報告する
-    </Button>
+    />
   </Paper>
 ));
 
@@ -180,9 +180,7 @@ const Thread: React.FC = () => {
           </Box>
         )}
 
-        <Button type="submit" variant="outlined" color="primary">
-          投稿する
-        </Button>
+        <NinjaHackerButton type="submit" label="投稿する" variant="outlined" color="primary" sx={{ fontFamily: '"Noto Sans JP", "Noto Sans", monospace' }} />
       </Paper>
     </Box>
   );

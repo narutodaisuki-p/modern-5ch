@@ -32,7 +32,7 @@ function NinjaHackerIcon(props: any) {
 }
 
 interface NinjaHackerButtonProps extends ButtonProps {
-  label: string;
+  label: string | React.ReactNode;
   component?: React.ElementType;
   href?: string;
   target?: string;
@@ -40,7 +40,7 @@ interface NinjaHackerButtonProps extends ButtonProps {
   to?: string; // ← 追加
 }
 
-const NinjaHackerButton: React.FC<NinjaHackerButtonProps> = ({ label, component = 'button', href, target, rel, ...props }) => {
+const NinjaHackerButton: React.FC<NinjaHackerButtonProps> = ({ label, component = 'button', href, target, rel, startIcon, ...props }) => {
   // サイバー煙エフェクト用のstate
   const [smoke, setSmoke] = React.useState(false);
 
@@ -54,9 +54,11 @@ const NinjaHackerButton: React.FC<NinjaHackerButtonProps> = ({ label, component 
   return (
     <Button
       startIcon={
-        <span className="ninja-hacker-icon-wrap">
-          <NinjaHackerIcon sx={{ fontSize: 28 }} />
-        </span>
+        startIcon !== undefined ? startIcon : (
+          <span className="ninja-hacker-icon-wrap">
+            <NinjaHackerIcon sx={{ fontSize: 28 }} />
+          </span>
+        )
       }
       component={component}
       href={href}
@@ -65,22 +67,22 @@ const NinjaHackerButton: React.FC<NinjaHackerButtonProps> = ({ label, component 
       {...props}
       onClick={handleClick}
       sx={{
-        background: 'linear-gradient(90deg, #181a20 60%, #0ff 100%)',
-        color: '#fff',
+        background: 'linear-gradient(90deg, #181a20 60%, #0cc 100%)', // 彩度・明度をやや下げる
+        color: '#e0f7fa', // 白→やや青緑寄り
         fontWeight: 'bold',
         borderRadius: '12px',
-        boxShadow: '0 0 16px #0ff, 0 0 4px #39ff14',
+        boxShadow: '0 0 8px #0ff, 0 0 2px #39ff14', // 影を半分に弱める
         letterSpacing: 2,
         textTransform: 'none',
         overflow: 'hidden',
         position: 'relative',
         fontFamily: '"Noto Sans JP", "Noto Sans", "monospace"',
-        border: '2px solid #39ff14',
+        border: '2px solid #26c6da', // 緑→青緑寄り
         transition: 'all 0.2s',
         '&:hover': {
-          background: 'linear-gradient(90deg, #222 60%, #39ff14 100%)',
-          boxShadow: '0 0 32px #39ff14, 0 0 12px #0ff',
-          filter: 'brightness(1.1) contrast(1.2)',
+          background: 'linear-gradient(90deg, #20232a 60%, #26c6da 100%)', // ホバーも落ち着いた青緑
+          boxShadow: '0 0 16px #26c6da, 0 0 4px #0ff', // ホバー時も控えめ
+          filter: 'brightness(1.05) contrast(1.1)', // 明るさ・コントラストも控えめ
           borderColor: '#ffd700',
         },
         ...props.sx,
@@ -90,7 +92,7 @@ const NinjaHackerButton: React.FC<NinjaHackerButtonProps> = ({ label, component 
         fontWeight: 900,
         letterSpacing: 2,
         fontFamily: '"Noto Sans JP", "Noto Sans", "monospace"',
-        textShadow: '0 0 8px #0ff, 0 0 2px #39ff14',
+        textShadow: '0 0 3px #0ff, 0 0 1px #39ff14', // textShadowも弱め
       }}>{label}</span>
       {/* サイバー煙エフェクト */}
       {smoke && (
@@ -133,8 +135,8 @@ const NinjaHackerButton: React.FC<NinjaHackerButtonProps> = ({ label, component 
           pointer-events: none;
           transform: translate(-50%,-60%) scale(1);
           background: radial-gradient(ellipse at center, #0ff8 0%, #39ff144 60%, transparent 100%);
-          opacity: 0.7;
-          filter: blur(8px) brightness(1.5);
+          opacity: 0.4; // 煙も控えめ
+          filter: blur(8px) brightness(1.1); // 明るさ控えめ
           animation: ninja-smoke-fade 0.6s ease-out;
           z-index: 2;
         }
