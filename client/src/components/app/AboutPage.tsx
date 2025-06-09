@@ -44,7 +44,7 @@ const AboutPage = () => {
         🛠 技術スタック
       </Typography>
       <Typography variant="body1" gutterBottom sx={{ color: '#b2ffef' }}>
-        フロントエンドは <strong>React + TypeScript</strong>、バックエンドは <strong>Node.js + Express</strong>、データベースは <strong>MongoDB</strong> を使用。<br/>
+        フロントエンドは <strong>React + TypeScript</strong>、バックエンドは <strong>Node.js + Express</strong>、データベースは <strong>MongoDB</strong>、<strong>socket.ioでリアルタイム通信</strong>を使用。<br/>
         <span style={{ color: '#39ff14' }}>GitHubで全コード公開中。誰でも改造・貢献OK！</span>
       </Typography>
 

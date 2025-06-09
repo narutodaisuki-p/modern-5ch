@@ -11,6 +11,13 @@ if (process.env.NODE_ENV !== 'production') {
 const multer = require('multer');
 const helmet = require('helmet');
 const Joi = require('joi');
+const http = require('http');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+
+const Post = require('./models/Post');
+const Thread = require('./models/Thread');
+const User = require('./models/User');
 
 
 // Cloudinaryの設定
@@ -129,6 +136,88 @@ app.use((err, req, res, next) => {
 });
 
 
+// Socket.IOの設定
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+
+io.on('connection', (socket) => {
+  console.log('Socket connected:', socket.id);
+  socket.on('joinThread', (threadId) => {
+    socket.join(`thread_${threadId}`);
+  });
+  socket.on('newPost', async (data) => {
+    // data: { threadId, content, name, image, token }
+    try {
+      let imageUrl = null;
+      if (data.image) {
+        // 画像付き投稿は認証必須
+        if (!data.token) {
+          socket.emit('postError', '画像投稿にはログインが必要です');
+          return;
+        }
+        let decoded, user;
+        try {
+          decoded = jwt.verify(data.token, process.env.JWT_SECRET);
+          user = await User.findById(decoded.id);
+          if (!user) throw new Error('ユーザーが見つかりません');
+          // トークン有効期限チェック
+          if (!user.isTokenValid(data.token)) throw new Error('トークンの有効期限が切れています');
+        } catch (err) {
+          socket.emit('postError', '認証エラー: 画像投稿にはログインが必要です');
+          return;
+        }
+        // base64データをCloudinaryにアップロード
+        const uploadToCloudinary = (base64) => {
+          return new Promise((resolve, reject) => {
+            cloudinary.uploader.upload(base64, {
+              resource_type: 'image',
+              folder: 'posts',
+            }, (error, result) => {
+              if (error) return reject(error);
+              resolve(result.secure_url);
+            });
+          });
+        };
+        try {
+          imageUrl = await uploadToCloudinary(data.image);
+        } catch (err) {
+          socket.emit('postError', '画像のアップロードに失敗しました');
+          return;
+        }
+      }
+      const postsCount = await Post.countDocuments({ threadId: data.threadId });
+      const post = new Post({
+        threadId: data.threadId,
+        number: postsCount + 1,
+        content: data.content,
+        name: data.name || '名無しさん',
+        imageUrl: imageUrl,
+        createdAt: new Date(),
+      });
+      const newPost = await post.save();
+      await Thread.findByIdAndUpdate(
+        data.threadId,
+        { $inc: { postCount: 1 }, lastPostAt: new Date() },
+        { new: true }
+      );
+      io.to(`thread_${data.threadId}`).emit('newPost', newPost);
+    } catch (err) {
+      socket.emit('postError', err.message || '投稿の作成中にエラーが発生しました');
+    }
+  });
+  socket.on('disconnect', () => {
+    console.log('Socket disconnected:', socket.id);
+  });
+});
+
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

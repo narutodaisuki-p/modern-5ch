@@ -6,6 +6,7 @@ import { useAppContext } from '../../context/Appcontext';
 import ErrorIs from '../common/Error';
 import NinjaHackerButton from '../common/NinjaHackerButton';
 import { ht } from 'date-fns/locale';
+import { socket } from '../../socket';
 
 const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 interface Post {
@@ -30,13 +31,38 @@ const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: nu
         style={{ maxWidth: '100%', marginTop: '10px' }}
       />
     )}
-    <NinjaHackerButton
-      label="報告する"
-      variant="outlined"
-      color="error"
-      sx={{ ml: 2, fontFamily: '"Noto Sans JP", "Noto Sans", monospace' }}
+    <button
+      style={{
+        background: 'transparent',
+        color: '#b71c1c',
+        border: '1px solid #e57373',
+        borderRadius: '4px',
+        fontSize: '0.8rem',
+        width: '38px', // 余裕を持たせる
+        height: '26px',
+        minWidth: 0,
+        minHeight: 0,
+        padding: '1px 0', // 横paddingを減らす
+        marginLeft: '8px',
+        cursor: 'pointer',
+        fontFamily: '"Noto Sans JP", "Noto Sans", monospace',
+        opacity: 0.7,
+        transition: 'background 0.2s, color 0.2s, opacity 0.2s',
+        letterSpacing: '0.05em',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textAlign: 'center',
+        boxSizing: 'border-box',
+      }}
+      onMouseOver={e => (e.currentTarget.style.opacity = '1')}
+      onMouseOut={e => (e.currentTarget.style.opacity = '0.7')}
+      onFocus={e => (e.currentTarget.style.opacity = '1')}
+      onBlur={e => (e.currentTarget.style.opacity = '0.7')}
       onClick={() => onReport(post._id)}
-    />
+      aria-label="投稿を報告"
+    >
+      報告
+    </button>
   </Paper>
 ));
 
@@ -63,40 +89,41 @@ const Thread: React.FC = () => {
     setErrorState(errorState); // 修正: errorStateを使用
   }, [loading, errorState, setLoading]);
 
+  useEffect(() => {
+    if (!threadId) return;
+    socket.connect();
+    socket.emit('joinThread', threadId);
+    socket.on('newPost', (post: Post) => {
+      setPosts((prev) => [...prev, post]);
+    });
+    socket.on('postError', (msg: string) => {
+      setErrorState(msg);
+      setTimeout(() => setErrorState(null), 3000);
+    });
+    return () => {
+      socket.off('newPost');
+      socket.off('postError');
+      socket.disconnect();
+    };
+  }, [threadId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.trim()) return;
-
-    const formData = new FormData();
-    formData.append('content', newPost);
     if (selectedFile) {
-      formData.append('image', selectedFile);
-    }
-
-    console.log('Selected file:', selectedFile);
-    console.log('FormData content:', Array.from(formData.entries()));
-
-    try {
-      const response = await fetch(`${URL}/api/threads/${threadId}/posts`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt') || ''}`,
-          // Content-Typeは削除
-        },
-        body: formData,
-      });
-      console.log('Response status:', response.status);
-
-      if (!response.ok) throw new Error('投稿の送信に失敗しました');
-
-      const savedPost = await response.json();
-      setPosts((prevPosts) => [...prevPosts, savedPost]);
+      // 画像がある場合はbase64で送信＋JWTトークンも送信
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result;
+        const token = localStorage.getItem('jwt');
+        socket.emit('newPost', { threadId, content: newPost, image: base64, token });
+        setNewPost('');
+        setSelectedFile(null);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      socket.emit('newPost', { threadId, content: newPost });
       setNewPost('');
-      setSelectedFile(null);
-    } catch (error) {
-      console.error(error);
-      setErrorState(error instanceof Error ? error.message : '投稿の送信に失敗しました');
-      setTimeout(() => setErrorState(null), 3000);
     }
   };
 

@@ -14,6 +14,7 @@ interface Category {
   _id: string;
   name: string;
 }
+
 const CreateThread: React.FC = () => {
   const navigate = useNavigate();
   const { loading, setLoading, error, setError } = useAppContext();
