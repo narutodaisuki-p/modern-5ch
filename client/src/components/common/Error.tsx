@@ -23,7 +23,7 @@ const Error: React.FC<{ message?: string; onRetry?: () => void }> = ({ message, 
   const handleCut = () => {
     setIsCut(true);
     setTimeout(() => {
-      setIsCut(false);
+    setIsCut(false);
       if (onRetry) onRetry();
     }, 800); // 斬撃アニメーション後にリトライ
   };
@@ -73,7 +73,7 @@ const Error: React.FC<{ message?: string; onRetry?: () => void }> = ({ message, 
           fontSize: '1em',
           transition: 'background 0.2s',
         }}>
-          斬撃でもう一度！
+          斬撃でいらいらを解消
         </button>
       </Box>
     </Box>

@@ -75,9 +75,9 @@ const Thread: React.FC = () => {
   const [errorState, setErrorState] = useState<string | null>(null); // 修正: setErrorStateの定義
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const loadPosts = useCallback(async () => {
+  const loadPosts = useCallback(() => {
     if (!threadId) return;
-    await fetchPosts(threadId, setPosts, setLoadingState, setErrorState);
+    fetchPosts(threadId, setPosts, setLoadingState, setErrorState);
   }, [threadId]);
 
   useEffect(() => {
@@ -94,7 +94,7 @@ const Thread: React.FC = () => {
     socket.connect();
     socket.emit('joinThread', threadId);
     socket.on('newPost', (post: Post) => {
-      setPosts((prev) => [...prev, post]);
+    setPosts((prev) => [...prev, post]);
     });
     socket.on('postError', (msg: string) => {
       setErrorState(msg);
@@ -159,7 +159,7 @@ const Thread: React.FC = () => {
 
   return (
     <Box>
-      {errorState && <ErrorIs message={errorState} />} {/* 修正: errorStateを使用 */}
+      {errorState && <ErrorIs message={errorState} />}
       {loading && <Typography variant="h6">読み込み中...</Typography>}
       <Typography variant="h4" gutterBottom>
         スレッド ログインしてないなら画像投稿はできません
@@ -199,11 +199,17 @@ const Thread: React.FC = () => {
         />
         {selectedFile && (
           <Box sx={{ mb: 2 }}>
-            <img
-              src={window.URL.createObjectURL(selectedFile)}
-              alt="Selected"
-              style={{ maxWidth: '50%', marginTop: '10px' }}
-            />
+            {selectedFile.type.startsWith('image/') ? (
+              <img
+                src={window.URL.createObjectURL(selectedFile)}
+                alt="Selected"
+                style={{ maxWidth: '50%', marginTop: '10px' }}
+              />
+            ) : (
+              <Typography color="error" variant="body2">
+                無効なファイル形式です。画像ファイルを選択してください。
+              </Typography>
+            )}
           </Box>
         )}
 

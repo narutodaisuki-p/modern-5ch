@@ -39,7 +39,7 @@ export const fetchThreads = (setThreads: (threads: Thread[]) => void, setLoading
       setLoading(false);
     });
 }
-export const fetchPosts = (threadId: string, setPosts: (posts: any[]) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
+export const  fetchPosts = (threadId: string, setPosts: (posts: any[]) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
   setLoading(true);
   axios.get(`${API_URL}/api/threads/${threadId}/posts`)
     .then((response) => {

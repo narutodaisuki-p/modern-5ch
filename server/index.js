@@ -63,7 +63,19 @@ app.use(cors({
 app.use(upload.single('image')); // 画像アップロード用のフィールド名を指定
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(helmet());
+app.use(helmet(
+  {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com'],
+        imgSrc: ["'self'", 'data:', 'https://res.cloudinary.com'],
+        connectSrc: ["'self'", ...allowedOrigins], // APIのドメインを追加
+      },
+    },
+  }
+));
 app.set('trust proxy', 1); // リバースプロキシを信頼
 
 // MongoDBの接続
@@ -72,6 +84,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/modern-5c
   useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
+  keepAlive: true,
 })
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.log(err));
@@ -101,11 +114,10 @@ const initializeCategories = async () => {
     { name : "受験勉強", description: "受験勉強に関する話題" },
   ];
   const promise = initialCategories.map( async (category) => {
-    Category.findOne({ name: category.name }).then((exists) => {
+    const exists = await Category.findOne({ name: category.name });
     if (!exists) {
       return new Category(category).save();
     }
-  });
   });
   await Promise.all(promise);
 };
@@ -147,6 +159,33 @@ const io = new Server(server, {
   }
 });
 
+const { customJoi } = require('./middleware/validate');
+// Socket.IO用の投稿バリデーションスキーマ
+const socketPostSchema = Joi.object({
+  threadId: Joi.string().trim().required(),
+  content: customJoi.string().trim().min(1).required(),
+  name: customJoi.string().trim().optional(),
+  image: Joi.string().optional(),
+  token: Joi.string().optional(),
+});
+
+// Socket.IO用の簡易レートリミット（IPごとに15分50回）
+const socketPostRateMap = new Map();
+const SOCKET_POST_LIMIT = 50;
+const SOCKET_POST_WINDOW = 15 * 60 * 1000;
+
+function checkSocketPostLimit(socket) {
+  const now = Date.now();
+  const ip = socket.handshake.address;
+  let info = socketPostRateMap.get(ip);
+  if (!info || now - info.start > SOCKET_POST_WINDOW) {
+    info = { count: 1, start: now };
+  } else {
+    info.count++;
+  }
+  socketPostRateMap.set(ip, info);
+  return info.count <= SOCKET_POST_LIMIT;
+}
 
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
@@ -154,27 +193,34 @@ io.on('connection', (socket) => {
     socket.join(`thread_${threadId}`);
   });
   socket.on('newPost', async (data) => {
-    // data: { threadId, content, name, image, token }
+    // Joi+sanitize-htmlバリデーション
+    const { error, value } = socketPostSchema.validate(data);
+    if (error) {
+      socket.emit('postError', error.details[0].message);
+      return;
+    }
+    // レートリミット
+    if (!checkSocketPostLimit(socket)) {
+      socket.emit('postError', '投稿が多すぎます。しばらく時間をおいてから再試行してください。');
+      return;
+    }
     try {
       let imageUrl = null;
-      if (data.image) {
-        // 画像付き投稿は認証必須
-        if (!data.token) {
+      if (value.image) {
+        if (!value.token) {
           socket.emit('postError', '画像投稿にはログインが必要です');
           return;
         }
         let decoded, user;
         try {
-          decoded = jwt.verify(data.token, process.env.JWT_SECRET);
+          decoded = jwt.verify(value.token, process.env.JWT_SECRET);
           user = await User.findById(decoded.id);
           if (!user) throw new Error('ユーザーが見つかりません');
-          // トークン有効期限チェック
-          if (!user.isTokenValid(data.token)) throw new Error('トークンの有効期限が切れています');
+          if (!user.isTokenValid(value.token)) throw new Error('トークンの有効期限が切れています');
         } catch (err) {
           socket.emit('postError', '認証エラー: 画像投稿にはログインが必要です');
           return;
         }
-        // base64データをCloudinaryにアップロード
         const uploadToCloudinary = (base64) => {
           return new Promise((resolve, reject) => {
             cloudinary.uploader.upload(base64, {
@@ -187,28 +233,28 @@ io.on('connection', (socket) => {
           });
         };
         try {
-          imageUrl = await uploadToCloudinary(data.image);
+          imageUrl = await uploadToCloudinary(value.image);
         } catch (err) {
           socket.emit('postError', '画像のアップロードに失敗しました');
           return;
         }
       }
-      const postsCount = await Post.countDocuments({ threadId: data.threadId });
+      const postsCount = await Post.countDocuments({ threadId: value.threadId });
       const post = new Post({
-        threadId: data.threadId,
+        threadId: value.threadId,
         number: postsCount + 1,
-        content: data.content,
-        name: data.name || '名無しさん',
+        content: value.content, // サニタイズ済み
+        name: value.name || '名無しさん',
         imageUrl: imageUrl,
         createdAt: new Date(),
       });
       const newPost = await post.save();
       await Thread.findByIdAndUpdate(
-        data.threadId,
+        value.threadId,
         { $inc: { postCount: 1 }, lastPostAt: new Date() },
         { new: true }
       );
-      io.to(`thread_${data.threadId}`).emit('newPost', newPost);
+      io.to(`thread_${value.threadId}`).emit('newPost', newPost);
     } catch (err) {
       socket.emit('postError', err.message || '投稿の作成中にエラーが発生しました');
     }

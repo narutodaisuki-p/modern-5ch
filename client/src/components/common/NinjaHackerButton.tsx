@@ -47,7 +47,7 @@ const NinjaHackerButton: React.FC<NinjaHackerButtonProps> = ({ label, component 
   // クリック時に煙を一瞬表示
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     setSmoke(true);
-    setTimeout(() => setSmoke(false), 600);
+    setTimeout(() => setSmoke(false), 900);
     if (props.onClick) props.onClick(e);
   };
 

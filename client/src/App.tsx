@@ -25,6 +25,7 @@ import Register from './components/app/Register';
 import Profile from './components/app/Profile'; // プロフィールページのインポート
 import Terms from './components/app/Terms';
 import NotFound from './components/common/NotFound';
+import Footer from './components/common/Footer';
 
 
 const theme = createTheme({
@@ -155,6 +156,7 @@ function App() {
         <AppProvider>
           <Navba /> 
           <MainContent />
+          <Footer />
         </AppProvider>
       </Router>
     </ThemeProvider>
