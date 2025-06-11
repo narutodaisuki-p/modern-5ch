@@ -24,7 +24,7 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.29.4",
-    "mongoose": "^7.5.0",
+    "mongoose": "^7.8.7",
     "multer": "^2.0.1",
     "openai": "^4.103.0",
     "sanitize-html": "^2.17.0",

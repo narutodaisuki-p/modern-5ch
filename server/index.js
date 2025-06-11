@@ -44,7 +44,8 @@ const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // �
 const allowedOrigins = [
   'https://jappan.vercel.app',                 // 本番用
   'https://modern-5ch-z6g6.vercel.app',            // プレビューや新URL用
-  'http://localhost:3000'
+  'http://localhost:3000',
+  "https://www.oira.ninja"
 ];
 
 
@@ -146,6 +147,7 @@ app.use((err, req, res, next) => {
   console.error("Error in middleware:", err);
   res.status(500).json({ message: err.message || 'Internal Server Error' });
 });
+
 
 
 // Socket.IOの設定

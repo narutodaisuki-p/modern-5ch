@@ -68,10 +68,10 @@ const Profile = () => {
             border: '1.5px solid #26c6da',
         }}>
             {/* プロフィール画像を編集 */}
-            <Button variant="outlined" color="primary" sx={{ mb: 2 }}>
+            <Button variant="outlined" color="primary" sx={{ mb: 2 }} >
                 画像を変更
             </Button>
-            
+
             <Avatar
                 src={profileImage || undefined}
                 alt="プロフィール画像"
