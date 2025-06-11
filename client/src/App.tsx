@@ -156,7 +156,6 @@ function App() {
           <Navba /> 
           <MainContent />
           <Footer /> 
-
         </AppProvider>
       </Router>
     </ThemeProvider>
