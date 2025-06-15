@@ -17,12 +17,13 @@ interface Category {
 
 const CreateThread: React.FC = () => {
   const navigate = useNavigate();
-  const { loading, setLoading, error, setError } = useAppContext();
+  const { loading, setLoading, error, setError,isLoggedIn } = useAppContext();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [categories, setCategories] = useState<Category[] | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [image, setImage] = useState<File | null>(null);
+  const [nickname, setNickname] = useState('');
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -70,6 +71,26 @@ const CreateThread: React.FC = () => {
       if (image) {
         formData.append('image', image);
       }
+      if (!isLoggedIn) {
+        formData.append('nickname', nickname);
+        // セッションストレージに保存
+        sessionStorage.setItem('nickname', nickname);
+      } else {
+        const token = localStorage.getItem('jwt');
+           
+         const response = await fetch(`${URL}/auth/profile`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+          });
+        if (!response.ok) {
+          throw new Error('ユーザー情報の取得に失敗しました');
+        }
+        const data = await response.json();
+        formData.append('nickname', data.name || '名無しの忍者'); // ユーザー名が取得できない場合はデフォルトの名前を使用
+      }
+
 
       await axios.post(`${URL}/api/threads`, formData, {
         headers: {
@@ -206,6 +227,15 @@ const CreateThread: React.FC = () => {
             }
           }}
         />
+        {/* 最初のなまえを選択する */}
+        {!isLoggedIn && (
+          <TextField
+            id="nickname"
+            label="最初のなまえ（任意）"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+          />
+        )}
         <TextField
           select
           fullWidth
@@ -232,6 +262,7 @@ const CreateThread: React.FC = () => {
             },
           }}
         >
+
           {!categories ? (
             <MenuItem value="" disabled>
               里を探索中...
@@ -273,6 +304,7 @@ const CreateThread: React.FC = () => {
               onChange={handleImageChange}
               accept="image/*"
             />
+
           </Button>
         </Box>
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2 }}>

@@ -6,7 +6,7 @@ const customJoi = Joi.extend((joi) => ({
   type: 'string',
   base: joi.string(),
   messages: {
-    'string.escapeHTML': '{{#label}} must not include HTML tags!',
+    'string.escapeHTML': '{{#label}} must not contain HTML tags or attributes.',
   },
   rules: {
     escapeHTML: {

@@ -26,6 +26,7 @@ import Profile from './components/app/Profile'; // プロフィールページ�
 import Terms from './components/app/Terms';
 import NotFound from './components/common/NotFound';
 import Footer from './components/common/Footer'; // フッターのインポート
+import PrivateRoute from './components/common/PrivateRoute';
 
 const theme = createTheme({
   palette: {
@@ -121,21 +122,22 @@ const theme = createTheme({
 // MainContent.jsx
 function MainContent() {
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}> 
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Routes>
         <Route path="/" element={<ThreadList />} />
         <Route path="/create" element={<CreateThread />} />
         <Route path="/thread/:threadId" element={<Thread />} />
         <Route path="/categories" element={<CategoryList />} />
-        <Route path="/ranking" element={<ThreadList />} /> {/* ランキングページはスレッド一覧を再利用 */}
-        <Route path="/about" element={<AboutPage />} /> {/* Aboutページはコンポーネントを使用 */}
+        <Route path="/ranking" element={<ThreadList />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path='/login' element={<Login />}></Route>
         <Route path='/register' element={<Register />}></Route>
-        <Route path='/profile' element={<Profile />}></Route>
         <Route path='/terms' element={<Terms />}></Route>
+        {/* プロフィールは認証ガード付き */}
+        <Route element={<PrivateRoute />}>
+          <Route path='/profile' element={<Profile />} />
+        </Route>
         {/* カテゴリ関連は Layout を使用 */}
-{/* 
-        <Route path="/purchase" element={<PurchasePage />} /> 追加 */}
         <Route element={<CategoryLayout />}>
           <Route path="/categories/:categoryId" element={<Category />} />
         </Route>

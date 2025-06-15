@@ -17,6 +17,8 @@ const userSchema = new Schema({
   picture: { type: String }, // プロフィール画像のURL
   createdAt: { type: Date, default: Date.now },
   rank: { type: String, default: '下忍' , enum: ['下忍', '中忍', '上忍'] }, // ユーザーのランク
+  lastLogin: { type: Date }, // 最終ログイン日時
+  threadNicknames: { type: Map, of: String, default: {} } // スレッドごとのニックネームを追加
 });
 
 // パスワードを検証するメソッド

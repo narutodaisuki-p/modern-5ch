@@ -3,6 +3,7 @@ const router = express.Router();
 const Thread = require('../models/Thread');
 const Post = require('../models/Post');
 const Category = require('../models/Category');
+const User = require('../models/User'); // Userモデルをインポート
 const {postLimiter} = require('../middleware/rateLimiter');
 const Ng = require('../middleware/Ng');
 const {auth, fileSizeLimiter} = require('../middleware/auth');
@@ -15,7 +16,7 @@ const threadSchema = Joi.object({
   title: customJoi.string().trim().min(3).max(100).required(),
   category: customJoi.string().trim().optional(),
   content: customJoi.string().trim().min(1).required(),
-  name: customJoi.string().trim().optional(),
+  nickname: customJoi.string().trim().min(1).max(50).optional(), // ニックネームの長さを適切に設定
 });
 
 const postSchema = Joi.object({
@@ -32,6 +33,10 @@ const postIdSchema = Joi.object({
   postId: Joi.string().trim().required(),
 });
 
+// ニックネームチェック用スキーマ
+const nicknameCheckSchema = Joi.object({
+  nickname: Joi.string().trim().min(1).max(50).required(), // ニックネームの長さを適切に設定
+});
 
 router.get('/', async (req, res, next) => {
     try {
@@ -64,7 +69,6 @@ router.post('/', postLimiter, validate(threadSchema), async (req, res, next) => 
                         stream.end(fileBuffer);
                     });
                 };
-
                 const result = await uploadToCloudinary(req.file.buffer);
                 console.log('Cloudinary upload success:', result.secure_url);
                 imageUrl = result.secure_url;
@@ -112,119 +116,125 @@ router.get('/:threadId/posts', async (req, res, next) => {
       return next(new AppError(err.message || '投稿の取得に失敗しました', 500));
     }
   });
-  // 修正案: req.paramsの保持とエラーハンドリングの改善
-router.post('/:threadId/posts',
-    postLimiter,
-    validate(postSchema),
-    async (req, res, next) => {
-        try {
-            // 画像がある場合のみ認証必須
-            if (req.file) {
-                if (!req.headers.authorization) {
-                    return res.status(401).json({ message: '画像投稿にはログインが必要です' });
-                }
-                let authError = null;
-                await auth(req, res, (err) => { if (err) authError = err; });
-                if (authError) {
-                    return res.status(401).json({ message: '認証エラー: 画像投稿にはログインが必要です' });
-                }
-            }
-            console.log('リクエスト開始時のreq.params:', req.params);
-            console.log('リクエスト開始時のreq.body:', req.body);
-            console.log('リクエスト開始時のreq.file:', req.file);
+//   });
+//   // 修正案: req.paramsの保持とエラーハンドリングの改善
+// router.post('/:threadId/posts',
+//     postLimiter,
+//     validate(postSchema),
+//     async (req, res, next) => {
+//     console.log("投稿リクエスト:", req.body);
+//         try {
+//             // 画像がある場合のみ認証必須
+//             if (req.file) {
+//                 if (!req.headers.authorization) {
+//                     return res.status(401).json({ message: '画像投稿にはログインが必要です' });
+//                 }
+//                 let authError = null;
+//                 await auth(req, res, (err) => { if (err) authError = err; });
+//                 if (authError) {
+//                     return res.status(401).json({ message: '認証エラー: 画像投稿にはログインが必要です' });
+//                 }
+//             }
+//             console.log('リクエスト開始時のreq.params:', req.params);
+//             console.log('リクエスト開始時のreq.body:', req.body);
+//             console.log('リクエスト開始時のreq.file:', req.file);
 
-            const originalParams = { ...req.params }; // req.paramsを保持
-            let imageUrl = null;
+//             const originalParams = { ...req.params }; // req.paramsを保持
+//             let imageUrl = null;
 
-            if (req.file) {
-                try {
-                    console.log("認証前 req.params:", req.params);
+//             if (req.file) {
+//                 try {
+//                     console.log("認証前 req.params:", req.params);
                 
-                    console.log("認証後 req.params:", req.params);
-                    req.params = { ...originalParams }; // 認証後にreq.paramsを復元
+//                     console.log("認証後 req.params:", req.params);
+//                     req.params = { ...originalParams }; // 認証後にreq.paramsを復元
 
-                    const uploadToCloudinary = (fileBuffer) => {
-                        return new Promise((resolve, reject) => {
-                            const stream = cloudinary.uploader.upload_stream({
-                                resource_type: 'image',
-                                folder: 'posts',
-                                invalidate: true, // キャッシュを無効化
-                            }, (error, result) => {
-                                if (error) {
-                                    console.error("Cloudinaryエラー詳細:", error);
-                                    reject(new AppError('Cloudinaryアップロードエラー', 500));
-                                    return;
-                                }
-                                resolve(result);
-                            });
-                            stream.end(fileBuffer);
-                        });
-                    };
+//                     const uploadToCloudinary = (fileBuffer) => {
+//                         return new Promise((resolve, reject) => {
+//                             const stream = cloudinary.uploader.upload_stream({
+//                                 resource_type: 'image',
+//                                 folder: 'posts',
+//                                 invalidate: true, // キャッシュを無効化
+//                             }, (error, result) => {
+//                                 if (error) {
+//                                     console.error("Cloudinaryエラー詳細:", error);
+//                                     reject(new AppError('Cloudinaryアップロードエラー', 500));
+//                                     return;
+//                                 }
+//                                 resolve(result);
+//                             });
+//                             stream.end(fileBuffer);
+//                         });
+//                     };
 
-                    try {
-                        console.log("Cloudinaryアップロード前 req.params:", req.params);
-                        const result = await uploadToCloudinary(req.file.buffer);
-                        console.log("Cloudinaryアップロード後 req.params:", req.params);
-                        req.params = { ...originalParams }; // Cloudinaryアップロード後にreq.paramsを復元
-                        imageUrl = result.secure_url;
-                        console.log('Cloudinary upload success:', imageUrl);
-                    } catch (err) {
-                        console.error('Cloudinary upload error:', err);
-                        if (!res.headersSent) {
-                            next(new AppError('画像のアップロードに失敗しました', 500));
-                        }
-                        return; // next()後は必ずreturn
-                    }
-                } catch (err) {
-                    console.error('Cloudinary upload error:', err);
-                    if (!res.headersSent) {
-                        next(err);
-                    }
-                    return; // next()後は必ずreturn
-                }
-            } else {
-                console.log("ファイルがアップロードされていなかったため、認証をスキップします。");
-            }
+//                     try {
+//                         console.log("Cloudinaryアップロード前 req.params:", req.params);
+//                         const result = await uploadToCloudinary(req.file.buffer);
+//                         console.log("Cloudinaryアップロード後 req.params:", req.params);
+//                         req.params = { ...originalParams }; // Cloudinaryアップロード後にreq.paramsを復元
+//                         imageUrl = result.secure_url;
+//                         console.log('Cloudinary upload success:', imageUrl);
+//                     } catch (err) {
+//                         console.error('Cloudinary upload error:', err);
+//                         if (!res.headersSent) {
+//                             next(new AppError('画像のアップロードに失敗しました', 500));
+//                         }
+//                         return; // next()後は必ずreturn
+//                     }
+//                 } catch (err) {
+//                     console.error('Cloudinary upload error:', err);
+//                     if (!res.headersSent) {
+//                         next(err);
+//                     }
+//                     return; // next()後は必ずreturn
+//                 }
+//             } else {
+//                 console.log("ファイルがアップロードされていなかったため、認証をスキップします。");
+//             }
 
-            const thread = await Thread.findById(req.params.threadId);
-            if (!thread) {
-                if (!res.headersSent) {
-                    next(new AppError('スレッドが見つかりません', 404));
-                }
-                return; // next()後は必ずreturn
-            }
+//             const thread = await Thread.findById(req.params.threadId);
+//             if (!thread) {
+//                 if (!res.headersSent) {
+//                     next(new AppError('スレッドが見つかりません', 404));
+//                 }
+//                 return; // next()後は必ずreturn
+//             }
 
-            const postsCount = await Post.countDocuments({ threadId: req.params.threadId });
-            const post = new Post({
-                threadId: req.params.threadId,
-                number: postsCount + 1,
-                content: req.body.content,
-                name: req.body.name || '名無しさん',
-                imageUrl: imageUrl || null,
-            });
+//             const postsCount = await Post.countDocuments({ threadId: req.params.threadId });
+//             const post = new Post({
+//                 threadId: req.params.threadId,
+//                 number: postsCount + 1,
+//                 content: req.body.content,
+//                 name: req.body.name || '名無しさん',
+//                 imageUrl: imageUrl || null,
+//             });
 
-            const newPost = await post.save();
+//             const newPost = await post.save();
 
-            await Thread.findByIdAndUpdate(
-                req.params.threadId,
-                { $inc: { postCount: 1 } },
-                { new: true }
-            );
+//             await Thread.findByIdAndUpdate(
+//                 req.params.threadId,
+//                 { $inc: { postCount: 1 } },
+//                 { new: true }
+//             );
 
-            thread.lastPostAt = new Date();
-            await thread.save();
-            res.status(201).json(newPost);
-            return; // レスポンス送信後はreturn
-        } catch (err) {
-            console.error("エラー発生時のreq.params:", req.params);
-            console.error(err);
-            if (!res.headersSent) {
-                next(new AppError(err.message || '投稿の作成中にエラーが発生しました', 500));
-            }
-            return; // next()後は必ずreturn
-        }
-    }
-);
+//             thread.user = req.body.name || '名無しさん'; // スレッドの作成者名を設定
+
+
+//             thread.lastPostAt = new Date();
+//             await thread.save();
+//             res.status(201).json(newPost);
+//             return; // レスポンス送信後はreturn
+//         } catch (err) {
+//             console.error("エラー発生時のreq.params:", req.params);
+//             console.error(err);
+//             if (!res.headersSent) {
+//                 next(new AppError(err.message || '投稿の作成中にエラーが発生しました', 500));
+//             }
+//             return; // next()後は必ずreturn
+
+//         }
+//     }
+// );
 
 router.post('/:threadId/posts/:postId/report', postLimiter, Ng, async (req, res, next) => {
     console.log("リクエスト開始時のreq.params:", req.params);
@@ -316,12 +326,47 @@ router.post('/:threadId/like', auth, async (req, res, next) => {
         thread.likes += 1; // いいね数を増加
         thread.likesBy.push(req.user.id); // ユーザーIDをlikesByに追加
         await thread.save();
-
         res.status(200).json({ message: 'いいねしました', likes: thread.likes });
     } catch (err) {
         console.error(err);
         return next(new AppError('いいね処理中にエラーが発生しました', 500));
     }
+});
+
+
+// ニックネームの重複チェックAPI
+router.post('/:threadId/checkNickname', validate(nicknameCheckSchema), async (req, res, next) => {
+  const { threadId } = req.params;
+  const { nickname } = req.body;
+
+  console.log("ニックネームチェックリクエスト:", { threadId, nickname });
+
+  try {
+    const trimmedNickname = nickname.trim();
+    if (!trimmedNickname || trimmedNickname === '') {
+      return res.status(400).json({ available: false, message: 'ニックネームが無効です。' });
+    }
+    // 「名無しさん」は常に利用可能とする（保存もチェックもしない前提）
+    if (trimmedNickname === '名無しさん') {
+      return res.status(200).json({ available: true });
+    }
+
+    if (threadId) {
+      const thread = await Thread.findById(threadId);
+      // userNicknames 配列に指定されたニックネームが存在するか確認
+      if (thread && thread.userNicknames && thread.userNicknames.includes(trimmedNickname)) {
+        console.log("ニックネームチェック:", { nickname: trimmedNickname, isNicknameTaken: true });
+        return res.status(409).json({ available: false, message: 'このニックネームはスレッド内で既に使用されています。' });
+      }
+      console.log("ニックネームチェック:", { nickname: trimmedNickname, isNicknameTaken: false });
+    }
+
+    res.status(200).json({ available: true });
+
+  } catch (err) {
+    console.error("ニックネームチェックエラー:", err);
+    return next(new AppError(err.message || 'ニックネームの確認中にエラーが発生しました。', 500));
+  }
 });
 
 module.exports = router;

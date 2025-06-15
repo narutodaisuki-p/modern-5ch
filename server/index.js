@@ -14,7 +14,6 @@ const Joi = require('joi');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
-
 const Post = require('./models/Post');
 const Thread = require('./models/Thread');
 const User = require('./models/User');
@@ -162,13 +161,14 @@ const io = new Server(server, {
 });
 
 const { customJoi } = require('./middleware/validate');
+
 // Socket.IO用の投稿バリデーションスキーマ
 const socketPostSchema = Joi.object({
   threadId: Joi.string().trim().required(),
   content: customJoi.string().trim().min(1).required(),
-  name: customJoi.string().trim().optional(),
   image: Joi.string().optional(),
   token: Joi.string().optional(),
+  name: Joi.string().trim().max(50).optional(),
 });
 
 // Socket.IO用の簡易レートリミット（IPごとに15分50回）
@@ -191,8 +191,9 @@ function checkSocketPostLimit(socket) {
 
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
-  socket.on('joinThread', (threadId) => {
+  socket.on('joinThread', ({ threadId, name }) => {
     socket.join(`thread_${threadId}`);
+    console.log(`User '${name || '名無しさん'}' joined thread ${threadId}`);
   });
   socket.on('newPost', async (data) => {
     // Joi+sanitize-htmlバリデーション
@@ -251,11 +252,38 @@ io.on('connection', (socket) => {
         createdAt: new Date(),
       });
       const newPost = await post.save();
-      await Thread.findByIdAndUpdate(
-        value.threadId,
-        { $inc: { postCount: 1 }, lastPostAt: new Date() },
-        { new: true }
-      );
+
+      // 投稿者のニックネームをスレッドのuserNicknames配列に保存 (重複しないように)
+      if (value.threadId && value.name && typeof value.name === 'string') {
+        const nicknameToSave = value.name.trim();
+        if (nicknameToSave !== '' && nicknameToSave !== '名無しさん') { // 名無しさんは保存・チェックの対象外とする
+          try {
+            const thread = await Thread.findById(value.threadId);
+            if (!thread) {
+              socket.emit('postError', 'スレッドが見つかりません');
+              return;
+            }
+            if (thread && thread.userNicknames && !thread.userNicknames.includes(nicknameToSave)) {
+              thread.userNicknames.push(nicknameToSave);
+              await thread.save();
+              console.log(`Nickname '${nicknameToSave}' added to thread ${value.threadId}`);
+            }
+          } catch (err) {
+            console.error('Error saving nickname to thread userNicknames array:', err);
+            // ニックネーム保存エラーは投稿処理全体を停止させない
+          }
+        }
+      }
+
+      // スレッドの投稿数と最終投稿日時を更新
+      if (value.threadId) { 
+        await Thread.findByIdAndUpdate(
+          value.threadId,
+          { $inc: { postCount: 1 }, lastPostAt: new Date() }, // 修正: カンマを追加
+          { new: true }
+        );
+      }
+
       io.to(`thread_${value.threadId}`).emit('newPost', newPost);
     } catch (err) {
       socket.emit('postError', err.message || '投稿の作成中にエラーが発生しました');

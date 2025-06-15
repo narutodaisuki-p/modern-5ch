@@ -1,5 +1,7 @@
 import axios from 'axios';
-const API_URL = process.env.REACT_APP_API_URL;
+import { threadId } from 'worker_threads';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 
 interface Thread {
@@ -8,6 +10,11 @@ interface Thread {
   createdAt: string;
 }
 
+interface NicknameValidationResult {
+  isValid: boolean;
+  message?: string;
+  nickname?: string;
+}
 
 
 export const createThread = (title: string, content: string, setLoading: (loading: boolean) => void, setError: (error: string | null) => void, navigate: (path: string) => void) => {
@@ -64,3 +71,69 @@ export const getCategories = async (setCategories:  (categories: any) => void, s
     setLoading(false);
   }
 };
+
+export const validateAndSetAnonymousNickname = async (
+  threadId: string,
+  nicknameToValidate: string,
+  sessionNicknameKey: string,
+  setNicknameState: (nickname: string) => void,
+  setErrorState: (error: string | null) => void,
+  setOpenDialogState: (open: boolean) => void,
+  isInitialAttempt: boolean = true // 初回試行かどうか
+): Promise<NicknameValidationResult> => {
+  try {
+    const response = await fetch(`${API_URL}/api/threads/${threadId}/checkNickname`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname: nicknameToValidate }),
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.available) {
+      const errorMessage = data.message || 'このニックネームは使用できません。';
+      setErrorState(errorMessage);
+      setTimeout(() => setErrorState(null), 3000);
+
+      if (isInitialAttempt) {
+        // 初回生成でNGだった場合、新しい名前を生成して再度試行する
+        // (generateFunnyName は Thread.tsx からインポートするか、こちらにも定義する必要がある)
+        // const newFunnyName = generateFunnyName(); // generateFunnyNameをどこからか持ってくる
+        // console.log(`Nickname '${nicknameToValidate}' taken, trying new: '${newFunnyName}'`);
+        // return validateAndSetAnonymousNickname(threadId, newFunnyName, sessionNicknameKey, setNicknameState, setErrorState, setOpenDialogState, false);
+        // ↑ 再帰呼び出しはループの可能性があるので、ここでは一旦、エラーを返してダイアログでユーザーに対応を促す
+        setOpenDialogState(true); // ダイアログを開いてユーザーに修正を促す
+        return { isValid: false, message: errorMessage, nickname: nicknameToValidate };
+      }
+      // ユーザーが入力したものがNGだった場合など
+      console.warn(`Nickname '${nicknameToValidate}' is not available.`);
+      setNicknameState(nicknameToValidate); // 入力したニックネームを表示しておく
+      setErrorState(errorMessage);
+      setTimeout(() => setErrorState(null), 3000);
+      // ダイアログを開いてユーザーに修正を促す
+      // ここでは再帰的に新しいニックネームを生成するのではなく、ユーザーに修正を促す
+      setOpenDialogState(true);
+      return { isValid: false, message: errorMessage, nickname: nicknameToValidate };
+    }
+
+    // 利用可能な場合
+    sessionStorage.setItem(sessionNicknameKey, nicknameToValidate);
+    setNicknameState(nicknameToValidate);
+    if (isInitialAttempt) {
+        setOpenDialogState(true); // 初回は確認のためダイアログを開く
+    } else {
+        setOpenDialogState(false); // ユーザーがダイアログで入力してOKだった場合は閉じる
+    }
+    return { isValid: true, nickname: nicknameToValidate };
+
+  } catch (error) {
+    console.error('ニックネームの確認中にエラー:', error);
+    // ネットワークエラーなどの場合
+    const errorMessage = 'ニックネームの確認中にネットワークエラーが発生しました。';
+    setErrorState(errorMessage);
+    setTimeout(() => setErrorState(null), 3000);
+    setNicknameState(nicknameToValidate); // エラー時もとりあえず表示はしておく
+    setOpenDialogState(true); // ダイアログでユーザーに対応を促す
+    return { isValid: false, message: errorMessage, nickname: nicknameToValidate };
+  }
+};
+

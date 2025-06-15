@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Typography, Avatar, Box } from '@mui/material';
+import { Button, Typography, Avatar, Box, TextField } from '@mui/material'; // TextField をインポート
 import Loadingis from '../common/Loading';
 const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -7,16 +7,12 @@ const Profile = () => {
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [username, setUsername] = useState<string>('ユーザー名');
     const [loading, setLoading] = useState<boolean>(true);
+    const [isEditing, setIsEditing] = useState<boolean>(false); // 編集モードの状態を追加
+    const [newUsername, setNewUsername] = useState<string>('');
 
     useEffect(() => {
         const fetchProfile = async () => {
             const token = localStorage.getItem('jwt');
-            if (!token) {
-                setLoading(false);
-                setUsername('ログインしてください');
-                return;
-            }
-
             try {
                 const response = await fetch(`${URL}/auth/profile`, {
                     method: 'GET',
@@ -32,6 +28,7 @@ const Profile = () => {
                 const data = await response.json();
                 setUsername(data.name);
                 setProfileImage(data.picture || '/default-avatar.png');
+                setNewUsername(data.name); // 初期値を設定
             } catch (error) {
                 console.error(error);
                 setUsername('エラーが発生しました');
@@ -46,6 +43,43 @@ const Profile = () => {
     const handleLogout = () => {
         localStorage.removeItem('jwt');
         window.location.href = '/login';
+    };
+
+    const handleEditToggle = () => {
+        setIsEditing(!isEditing);
+        if (isEditing) { // 編集モードを終了するときは、現在のユーザー名に戻す
+            setNewUsername(username);
+        }
+    };
+
+    const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setNewUsername(event.target.value);
+    };
+
+    const handleSaveUsername = async () => {
+        const token = localStorage.getItem('jwt');
+        try {
+            const response = await fetch(`${URL}/auth/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ name: newUsername }),
+            });
+
+            if (!response.ok) {
+                throw new Error('ユーザー名の更新に失敗しました');
+            }
+
+            const data = await response.json();
+            setUsername(data.user.name);
+            setIsEditing(false);
+            window.location.reload(); // 更新後にページをリロードして最新の情報を反映
+        } catch (error) {
+            console.error(error);
+            // エラーハンドリングをここに追加（例：ユーザーにエラーメッセージを表示）
+        }
     };
 
     if (loading) {
@@ -93,15 +127,34 @@ const Profile = () => {
             }}>
                 プロフィール
             </Typography>
-            <Typography variant="h6" sx={{
-                mb: 3,
-                color: '#43a047',
-                fontWeight: 700,
-                letterSpacing: 1,
-                textShadow: '0 0 4px #26c6da88',
-            }}>
-                {username}
-            </Typography>
+            {isEditing ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <TextField
+                        label="新しいユーザー名"
+                        value={newUsername}
+                        onChange={handleUsernameChange}
+                        variant="outlined"
+                        size="small"
+                        sx={{ mr: 1 }}
+                    />
+                    <Button variant="contained" onClick={handleSaveUsername} sx={{ mr: 1 }}>保存</Button>
+                    <Button variant="outlined" onClick={handleEditToggle}>キャンセル</Button>
+                </Box>
+            ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" sx={{
+                        mb:0, // 編集ボタンと縦位置を合わせるために調整
+                        mr: 2, // ボタンとの間隔
+                        color: '#43a047',
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        textShadow: '0 0 4px #26c6da88',
+                    }}>
+                        {username}
+                    </Typography>
+                    <Button variant="outlined" onClick={handleEditToggle} size="small">編集</Button>
+                </Box>
+            )}
             <Button
                 variant="contained"
                 color="error"

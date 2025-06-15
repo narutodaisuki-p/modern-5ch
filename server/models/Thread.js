@@ -12,6 +12,9 @@ const threadSchema = new Schema({
   postCount: { type: Number, default: 0 }, // 投稿数を追加
   imageUrl: { type: String, default: null }, // 画像URLを追加
   likesBy: [{ type: Schema.Types.ObjectId, ref: 'User' }], // いいねをしたユーザーのIDを保存
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: false }, // スレッドを作成したユーザーのID
+  creator : { type: String, required: false}, // スレッドを作成したユーザーの名前
+  userNicknames: { type: [String], default: [] } // スレッドで使用されたニックネームのリスト
 });
 
 module.exports = mongoose.model('Thread', threadSchema);

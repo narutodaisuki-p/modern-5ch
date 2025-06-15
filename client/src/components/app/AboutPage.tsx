@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import NinjaHackerButton from '../common/NinjaHackerButton';
+import { Helmet } from "react-helmet"
 
 const AboutPage = () => {
   return (
@@ -16,6 +17,15 @@ const AboutPage = () => {
       position: 'relative',
       overflow: 'hidden',
     }}>
+
+    <Helmet>
+      <title>この掲示板について - Modern 5ch</title>
+      <meta name="description" content="この掲示板は、1人の高校生が「自分が使いたい掲示板を作る」というシンプルな動機からスタートしたオープンソースプロジェクトです。" />
+      <meta name="keywords" content="掲示板, 5ch, オープンソース, React, Node.js, MongoDB, socket.io" />
+      <meta name="author" content="narutodaisuki-p" />
+      <meta property="og:title" content="この掲示板について - Modern 5ch" />
+      <meta property="og:description" content="この掲示板は、1人の高校生が「自分が使いたい掲示板を作る」というシンプルな動機からスタートしたオープンソースプロジェクトです。" />
+      </Helmet>
       <Typography variant="h4" gutterBottom sx={{
         fontWeight: 900,
         letterSpacing: 2,

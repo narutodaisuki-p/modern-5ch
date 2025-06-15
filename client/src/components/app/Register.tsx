@@ -12,6 +12,12 @@ const URL = process.env.REACT_APP_API_URL;
 interface RegisterGoogleResponse {
   message: string;
   token?: string;
+  user?: {
+    _id: string;
+    username: string;
+    email: string;
+    picture?: string;
+  };
 }
 
 
@@ -21,7 +27,7 @@ const Register = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { setIsLoggedIn } = useAppContext();
+  const { setIsLoggedIn, setUser } = useAppContext();
   useEffect(() => {
     const verifyToken = async () => {
       const jwt = localStorage.getItem('jwt');
@@ -74,8 +80,19 @@ const Register = () => {
       const data: RegisterGoogleResponse = await res.json();
       setSuccessMessage(data.message || 'Google登録成功');
       if (data.token) localStorage.setItem('jwt', data.token);
+      console.log('Google登録成功:', data);
+      if (data.user) {
+        setUser({
+          _id: data.user._id,
+          name: data.user.username, // username を name にマッピング
+          email: data.user.email,
+          picture: data.user.picture, // Googleからのプロフィール画像URL
+        });
+      } else {
+        setUser(null);
+      }
+      setIsAuthenticated(true);
       setIsLoggedIn(true);
-      <Navigate to="/" replace />;
     } catch (err: any) {
       setError(err.message || 'Google登録に失敗しました');
     } finally {

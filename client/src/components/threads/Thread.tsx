@@ -1,14 +1,29 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Paper, TextField } from '@mui/material';
+import { Box, Typography, Paper, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { fetchPosts } from '../../api/apiClient';
 import { useAppContext } from '../../context/Appcontext';
 import ErrorIs from '../common/Error';
 import NinjaHackerButton from '../common/NinjaHackerButton';
-import { ht } from 'date-fns/locale';
 import { socket } from '../../socket';
+import { validateAndSetAnonymousNickname } from '../../api/apiClient';
 
 const URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+// 面白い名前を生成する関数
+const adjectives = ['風変わりな', '陽気な', '静かな', '賢い', '勇敢な', '眠たい', 'さすらいの', 'おかしな', '輝く', '謎めいた'];
+const nouns = ['猫', '犬', '忍者', '侍', '旅人', '狐', '梟', '龍', '影', '星'];
+
+const generateFunnyName = () => {
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const noun = nouns[Math.floor(Math.random() * nouns.length)];
+  // 簡単な重複回避のため、短いランダム文字列を追加（サーバー側での重複チェックが本筋）
+
+  const randomSuffix = Math.random().toString(36).substring(2, 7);
+  return `${adj}${noun}_${randomSuffix}`;
+};
+
+
 interface Post {
   _id: number;
   content: string;
@@ -16,12 +31,13 @@ interface Post {
   number: number;
   threadId?: number;
   imageUrl?: string;
+  name?: string; // 投稿者名フィールドを追加
 }
 
-const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: number) => void }) => (
+const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: number, content: string) => void }) => ( // content引数を追加
   <Paper sx={{ p: 2, mb: 2 }}>
     <Typography variant="body2" color="text.secondary" gutterBottom>
-      {post.number}. {new Date(post.createdAt).toLocaleString()}
+      {post.number}. {post.name || '名無しさん'} - {new Date(post.createdAt).toLocaleString()}
     </Typography>
     <Typography variant="body1">{post.content}</Typography>
     {post.imageUrl && (
@@ -58,7 +74,7 @@ const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: nu
       onMouseOut={e => (e.currentTarget.style.opacity = '0.7')}
       onFocus={e => (e.currentTarget.style.opacity = '1')}
       onBlur={e => (e.currentTarget.style.opacity = '0.7')}
-      onClick={() => onReport(post._id)}
+      onClick={() => onReport(post._id, post.content)}
       aria-label="投稿を報告"
     >
       報告
@@ -70,10 +86,65 @@ const Thread: React.FC = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
-  const { setLoading, setError } = useAppContext();
-  const [loading, setLoadingState] = useState(true);
-  const [errorState, setErrorState] = useState<string | null>(null); // 修正: setErrorStateの定義
+  const { setLoading, setError, user, isLoggedIn } = useAppContext(); // user を Appcontext から取得
+  const [loadingState, setLoadingState] = useState(true);
+  const [errorState, setErrorState] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [nickname, setNickname] = useState<string>('');
+  const [openDialog, setOpenDialog] = useState(false); // 初期値をfalseにし、useEffectで制御
+
+  useEffect(() => {
+    if (!threadId) return;
+
+    if (isLoggedIn && user) {
+      // ログインしている場合
+      // TODO: サーバーに保存されたスレッドニックネーム user.threadNicknames[threadId] を取得する
+      // 今はユーザーのデフォルト名を使用
+      setNickname(user.name || 'ログインユーザー');
+      setOpenDialog(false); // ログインしていればダイアログは不要
+    } else {
+      // 匿名ユーザーの場合
+      const sessionNicknameKey = `anonymousNickname-${threadId}`;
+      const existingNickname = sessionStorage.getItem(sessionNicknameKey);
+      if (!existingNickname) {
+        const generatedNickname = generateFunnyName();
+        validateAndSetAnonymousNickname(
+          threadId,
+          generatedNickname,
+          sessionNicknameKey,
+          setNickname,
+          setErrorState,
+          setOpenDialog,
+          true // 初回なのでtrue
+        );
+      } else {
+        setNickname(existingNickname);
+        setOpenDialog(false); // 既存のニックネームを使用するためダイアログは表示しない
+      }
+    }
+  }, [threadId, user, isLoggedIn]);
+
+  // 名前決定時の処理
+  const handleNicknameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (nickname.trim()) {
+      if (!user && threadId) {
+        const sessionNicknameKey = `anonymousNickname-${threadId}`;
+        await validateAndSetAnonymousNickname(
+          threadId,
+          nickname,
+          sessionNicknameKey,
+          setNickname,
+          setErrorState,
+          setOpenDialog,
+          false // 初回ではないのでfalse
+        );
+      }
+      // TODO: ログインユーザーの場合、サーバーにニックネームを保存する処理 (user.threadNicknames)
+      
+      setOpenDialog(false);
+    }
+  };
 
   const loadPosts = useCallback(() => {
     if (!threadId) return;
@@ -84,17 +155,31 @@ const Thread: React.FC = () => {
     loadPosts();
   }, [loadPosts]);
 
+  // コンテキストのsetLoading/setErrorとローカルのloadingState/errorStateを同期
   useEffect(() => {
-    setLoading(loading);
-    setErrorState(errorState); // 修正: errorStateを使用
-  }, [loading, errorState, setLoading]);
+    setLoading(loadingState);
+  }, [loadingState, setLoading]);
 
   useEffect(() => {
-    if (!threadId) return;
+    setError(errorState);
+  }, [errorState, setError]);
+
+
+  useEffect(() => {
+    // ニックネームが確定するまで、または必須情報が揃うまでソケット接続を待つ
+    if (!threadId || !nickname) return;
+    
+    const currentNameForSocket = (user) ? (user.name || nickname) : nickname;
+    if (!currentNameForSocket) {
+        console.warn('ニックネームが未設定のため、ソケット接続をスキップします。');
+        return;
+    }
+
     socket.connect();
-    socket.emit('joinThread', threadId);
+    socket.emit('joinThread', { threadId, name: currentNameForSocket });
+
     socket.on('newPost', (post: Post) => {
-    setPosts((prev) => [...prev, post]);
+      setPosts((prev) => [...prev, post]);
     });
     socket.on('postError', (msg: string) => {
       setErrorState(msg);
@@ -105,24 +190,30 @@ const Thread: React.FC = () => {
       socket.off('postError');
       socket.disconnect();
     };
-  }, [threadId]);
+  }, [threadId, nickname, user]); // user を依存配列に追加
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.trim()) return;
+
+    const nameToSend = (user) ? (user.name || nickname) : nickname;
+    if (!nameToSend) {
+        setErrorState("ニックネームが設定されていません。");
+        return;
+    }
+
     if (selectedFile) {
-      // 画像がある場合はbase64で送信＋JWTトークンも送信
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result;
         const token = localStorage.getItem('jwt');
-        socket.emit('newPost', { threadId, content: newPost, image: base64, token });
+        socket.emit('newPost', { threadId, content: newPost, image: base64, token, name: nameToSend });
         setNewPost('');
         setSelectedFile(null);
       };
       reader.readAsDataURL(selectedFile);
     } else {
-      socket.emit('newPost', { threadId, content: newPost });
+      socket.emit('newPost', { threadId, content: newPost, name: nameToSend });
       setNewPost('');
     }
   };
@@ -139,10 +230,9 @@ const Thread: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert(`通報の送信に失敗しました: ${errorData.message}`);
-      
-       setErrorState(`通報の送信に失敗しました: ${errorData.message}`);
-       setTimeout(() => setErrorState(null), 1000); // 1秒後にエラーメッセージをクリア
+        // alert(`通報の送信に失敗しました: ${errorData.message}`); // alertは重複するのでコメントアウト
+        setErrorState(`通報の送信に失敗しました: ${errorData.message}`);
+        setTimeout(() => setErrorState(null), 1000); 
         throw new Error(`通報の送信に失敗しました: ${errorData.message}`);
       }
 
@@ -150,8 +240,13 @@ const Thread: React.FC = () => {
       alert('通報が送信されました');
     } catch (error) {
       console.error(error);
+      if (error instanceof Error) {
+        setErrorState(error.message);
+      } else {
+        setErrorState('通報処理中に不明なエラーが発生しました。');
+      }
     }
-  }, [threadId]);
+  }, [threadId]); // setErrorStateを依存配列に追加した方が良いが、今回は省略
 
   const memoizedOnReport = useCallback((postId: number, content: string) => {
     handleReport(postId, content);
@@ -159,10 +254,47 @@ const Thread: React.FC = () => {
 
   return (
     <Box>
+      <Dialog 
+        open={openDialog && !user} 
+        disableEscapeKeyDown 
+        onClose={(event, reason) => {
+          if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+            return;
+          }
+        }}
+      >
+        <form onSubmit={handleNicknameSubmit}>
+          <DialogTitle>ニックネームを入力または確認してください</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="ニックネーム"
+              type="text"
+              fullWidth
+              value={nickname}
+              onChange={e => {
+                const newNick = e.target.value;
+                setNickname(newNick);
+                if (!user && threadId) {
+                  sessionStorage.setItem(`anonymousNickname-${threadId}`, newNick);
+                }
+              }}
+              required
+              helperText={!user ? "この名前で投稿されます。" : ""}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button type="submit" variant="contained" color="primary" disabled={!nickname.trim()}>
+              入室する
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
       {errorState && <ErrorIs message={errorState} />}
-      {loading && <Typography variant="h6">読み込み中...</Typography>}
+      {loadingState && <Typography variant="h6">読み込み中...</Typography>}
       <Typography variant="h4" gutterBottom>
-        スレッド ログインしてないなら画像投稿はできません
+        スレッド {user ? `(${user.name}として参加中)` : '(匿名で参加中)'}
       </Typography>
       
 

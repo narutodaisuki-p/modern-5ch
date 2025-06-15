@@ -4,12 +4,13 @@ import { Box } from '@mui/material';
 import { TextField, Button, Typography, Container } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
-import { useAppContext } from '../../context/Appcontext';;
+import { useAppContext } from '../../context/Appcontext';
+;
 const URL = process.env.REACT_APP_API_URL;
 
 const Login = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { setIsLoggedIn } = useAppContext();
+  const { setIsLoggedIn,setUser } = useAppContext();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,9 +72,19 @@ const Login = () => {
         return response.json();
       })
       .then((data) => {
-        console.log('ログイン成功:', data);
         localStorage.setItem('jwt', data.token); // JWTを保存
         setIsAuthenticated(true); // 認証状態を更新
+        setIsLoggedIn(true); // グローバルステートも更新
+        if (data.user) {
+          setUser({
+            _id: data.user._id,
+            name: data.user.username,
+            email: data.user.email,
+            picture: data.user.picture,
+          });
+        } else {
+          setUser(null);
+        }
       })
       .catch((error) => {
         console.error('ログインエラー:', error);
@@ -84,7 +95,6 @@ const Login = () => {
   };
 
   const handleGoogleLogin = (credentialResponse: any) => {
-    console.log('Googleログイン成功:', credentialResponse.credential);
     fetch(`${URL}/auth/google`, {
       method: 'POST',
       headers: {
@@ -99,10 +109,16 @@ const Login = () => {
         return response.json();
       })
       .then((data) => {
-        console.log('Googleログイン成功:', data);
         localStorage.setItem('jwt', data.token); // JWTを保存
         setIsAuthenticated(true); // 認証状態を更新
         setIsLoggedIn(true); // グローバルステートも更新
+        setUser({
+          _id: data.user._id,
+          name: data.user.username, // username を name にマッピング
+          email: data.user.email,
+          picture: data.user.picture, // Googleからのプロフィール画像URL
+        });
+        
       })
       .catch((error) => {
         console.error('Googleログインエラー:', error);
@@ -111,7 +127,9 @@ const Login = () => {
   };
 
   return (
+    
     <Box sx={{ maxWidth: '400px', mx: 'auto', mt: 4 }}>
+
       <form onSubmit={handleSubmit}>
         <Typography variant="h4" align="center" gutterBottom>
           ログイン

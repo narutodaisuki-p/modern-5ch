@@ -1,10 +1,14 @@
-import { Box } from '@mui/material';
-import { Typography } from '@mui/material';
-import { set } from 'date-fns';
-import { is } from 'date-fns/locale';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-interface AppContextProps {
+// ユーザー情報の型を定義 (必要に応じて拡張してください)
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  picture?: string; // Googleのプロフィール画像URLなど
+}
+
+export interface AppContextProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
   error: string | null;
@@ -13,6 +17,8 @@ interface AppContextProps {
   categoryId: string | undefined;
   isLoggedIn: boolean;
   setIsLoggedIn: (isLoggedIn: boolean) => void;
+  user: User | null; // user情報を追加
+  setUser: (user: User | null) => void; // setUser関数を追加
 }
 const URL = process.env.REACT_APP_API_URL;
 
@@ -26,6 +32,7 @@ export const AppProvider: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null); // user の state を追加
 
   useEffect(() => {
     const fetchCategory = async () => {
@@ -53,30 +60,48 @@ export const AppProvider: React.FC<{
   useEffect(() =>{
     const token = localStorage.getItem('jwt');
     if (token) {
-      const response = fetch(`${URL}/auth/verify`, {
+      fetch(`${URL}/auth/verify`, { // fetchの戻り値を直接使わない
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ token }),
-      }); 
-      response.then(res => {
+      })
+      .then(async res => { // async を追加してレスポンスボディの処理を待つ
         if (!res.ok) {
           localStorage.removeItem('jwt');
-          setError(res.statusText);
+          setUser(null); // 認証失敗時はユーザー情報もクリア
+          setIsLoggedIn(false);
+          // エラーメッセージをセットする前にレスポンスボディを試みる
+          try {
+            const errorData = await res.json();
+            setError(errorData.message || res.statusText);
+          } catch (e) {
+            setError(res.statusText);
+          }
+          return; // 早期リターン
         }
-        return setIsLoggedIn(true);
-
-      }).catch(err => {
+        const userData = await res.json(); // レスポンスからユーザーデータを取得
+        setUser(userData.user); // ユーザー情報をセット (APIのレスポンス形式に合わせる)
+        setIsLoggedIn(true);
+      })
+      .catch(err => {
         console.error('認証エラー:', err);
         setError('認証に失敗しました。再度ログインしてください。');
+        localStorage.removeItem('jwt'); // エラー時もトークン削除
+        setUser(null);
+        setIsLoggedIn(false);
       });
+    } else {
+      // トークンがない場合はログアウト状態
+      setUser(null);
+      setIsLoggedIn(false);
     }
   }, []);
 
   return (
-    <AppContext.Provider value={{ loading, setLoading, error, setError, category, categoryId, isLoggedIn, setIsLoggedIn }}>
+    <AppContext.Provider value={{ loading, setLoading, error, setError, category, categoryId, isLoggedIn, setIsLoggedIn, user, setUser }}>
       {children}
     </AppContext.Provider>
   );
