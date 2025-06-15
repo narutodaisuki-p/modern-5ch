@@ -141,7 +141,7 @@ const Thread: React.FC = () => {
         );
       }
       // TODO: ログインユーザーの場合、サーバーにニックネームを保存する処理 (user.threadNicknames)
-      
+
       setOpenDialog(false);
     }
   };

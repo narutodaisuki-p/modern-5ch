@@ -97,7 +97,7 @@ router.post('/', postLimiter, validate(threadSchema), async (req, res, next) => 
           threadId: newThread._id,
           number: 1,
           content: req.body.content,
-          name: req.body.name || '名無しさん'
+          name: req.body.nickname || '名無しさん'
         });
         await post.save();
   

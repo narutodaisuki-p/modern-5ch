@@ -57,6 +57,7 @@ const Profile = () => {
     };
 
     const handleSaveUsername = async () => {
+    
         const token = localStorage.getItem('jwt');
         try {
             const response = await fetch(`${URL}/auth/profile`, {

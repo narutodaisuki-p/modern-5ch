@@ -73,8 +73,7 @@ const CreateThread: React.FC = () => {
       }
       if (!isLoggedIn) {
         formData.append('nickname', nickname);
-        // セッションストレージに保存
-        sessionStorage.setItem('nickname', nickname);
+        
       } else {
         const token = localStorage.getItem('jwt');
            
@@ -92,12 +91,13 @@ const CreateThread: React.FC = () => {
       }
 
 
-      await axios.post(`${URL}/api/threads`, formData, {
+      const response = await axios.post(`${URL}/api/threads`, formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('jwt') || ''}`,
         },
       });
-
+      // セッションストレージにニックネームを保存
+      sessionStorage.setItem(`anonymousNickname-${response.data._id}`, nickname || '名無しの忍者');
       navigate(`/categories/${selectedCategory}`);
     } catch (err) {
       console.error('スレッド作成失敗:', err);
