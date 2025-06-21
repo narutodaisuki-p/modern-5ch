@@ -119,7 +119,9 @@ const initializeCategories = async () => {
       return new Category(category).save();
     }
   });
-  await Promise.all(promise);
+  await Promise.all(promise)
+  .then(() => console.log('Categories initialized'))
+  .catch(err => console.error('Error initializing categories:', err));
 };
 
 initializeCategories().catch((error) => console.error(error));
@@ -163,12 +165,13 @@ const io = new Server(server, {
 const { customJoi } = require('./middleware/validate');
 
 // Socket.IO用の投稿バリデーションスキーマ
-const socketPostSchema = Joi.object({
-  threadId: Joi.string().trim().required(),
-  content: customJoi.string().trim().min(1).required(),
-  image: Joi.string().optional(),
-  token: Joi.string().optional(),
-  name: Joi.string().trim().max(50).optional(),
+const socketPostSchema = customJoi.object({
+  threadId: customJoi.string().escapeHTML().trim().required(),
+  content: customJoi.string().escapeHTML().trim().min(1).required(),
+  image: customJoi.string().optional(),
+  token: customJoi.optional(), // トークンはオプション
+  name: customJoi.string().escapeHTML().trim().max(50).optional(),
+  userId: customJoi.string().optional(), // userIdはオプション
 });
 
 // Socket.IO用の簡易レートリミット（IPごとに15分50回）
@@ -198,6 +201,7 @@ io.on('connection', (socket) => {
   socket.on('newPost', async (data) => {
     // Joi+sanitize-htmlバリデーション
     const { error, value } = socketPostSchema.validate(data);
+    console.log('Received newPost data:', value);
     if (error) {
       socket.emit('postError', error.details[0].message);
       return;
@@ -209,45 +213,61 @@ io.on('connection', (socket) => {
     }
     try {
       let imageUrl = null;
-      if (value.image) {
-        if (!value.token) {
-          socket.emit('postError', '画像投稿にはログインが必要です');
-          return;
-        }
-        let decoded, user;
+      let userId = null; // userId を初期化
+
+      // トークンがあればユーザー情報を取得し、userIdを設定
+      if (value.token) {
         try {
-          decoded = jwt.verify(value.token, process.env.JWT_SECRET);
-          user = await User.findById(decoded.id);
+          const decoded = jwt.verify(value.token, process.env.JWT_SECRET);
+          const user = await User.findById(decoded.id);
           if (!user) throw new Error('ユーザーが見つかりません');
           if (!user.isTokenValid(value.token)) throw new Error('トークンの有効期限が切れています');
+          userId = user._id; // 認証されたユーザーのIDを取得
+          console.log(`Authenticated user ID: ${userId}`);
+
+          // 画像投稿処理 (ユーザー認証後に行う)
+          if (value.image) {
+            const uploadToCloudinary = (base64) => {
+              return new Promise((resolve, reject) => {
+                cloudinary.uploader.upload(base64, {
+                  resource_type: 'image',
+                  folder: 'posts',
+                }, (error, result) => {
+                  if (error) return reject(error);
+                  resolve(result.secure_url);
+                });
+              });
+            };
+            try {
+              imageUrl = await uploadToCloudinary(value.image);
+            } catch (err) {
+              socket.emit('postError', '画像のアップロードに失敗しました');
+              return;
+            }
+          }
         } catch (err) {
-          socket.emit('postError', '認証エラー: 画像投稿にはログインが必要です');
-          return;
+          // トークンが無効または画像投稿以外のケースでトークンエラーが発生した場合
+          // userId は null のままとなり、匿名投稿として扱われる
+          // 画像投稿を試みていた場合はエラーを返す
+          if (value.image) {
+            socket.emit('postError', '認証エラー: 画像投稿にはログインが必要です');
+            return;
+          }
+          console.log("Token validation failed or user not found, proceeding as anonymous post:", err.message);
         }
-        const uploadToCloudinary = (base64) => {
-          return new Promise((resolve, reject) => {
-            cloudinary.uploader.upload(base64, {
-              resource_type: 'image',
-              folder: 'posts',
-            }, (error, result) => {
-              if (error) return reject(error);
-              resolve(result.secure_url);
-            });
-          });
-        };
-        try {
-          imageUrl = await uploadToCloudinary(value.image);
-        } catch (err) {
-          socket.emit('postError', '画像のアップロードに失敗しました');
-          return;
-        }
+      } else if (value.image) {
+        // トークンなしで画像投稿を試みた場合
+        socket.emit('postError', '画像投稿にはログインが必要です');
+        return;
       }
+
       const postsCount = await Post.countDocuments({ threadId: value.threadId });
       const post = new Post({
         threadId: value.threadId,
         number: postsCount + 1,
         content: value.content, // サニタイズ済み
         name: value.name || '名無しさん',
+        userId: userId, // 取得した userId を設定 (認証されていなければ null)
         imageUrl: imageUrl,
         createdAt: new Date(),
       });

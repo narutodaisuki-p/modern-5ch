@@ -14,7 +14,7 @@ const postLimiter = rateLimit({
 // グローバルなレートリミッター（他のエンドポイント用）
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15分
-  max: 400, // 全体で15分間に最大400リクエスト
+  max: 600, // 全体で15分間に最大600リクエスト
   message: {
     error: 'リクエストが多すぎます。しばらく時間をおいてから再試行してください。',
   },

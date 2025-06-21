@@ -12,10 +12,10 @@ const Ng = (req, res, next) => {
     if (Ngwords.some((word) => content.includes(word))) {
         console.error('NGワードが含まれています:', content);
         return next()
+    }else {
+        res.status(400).json({ message: 'NGワードが含まれていません。' });
     }
-    res.status(400).json({ message: 'NGワードが含まれていません。' });
 
-    
 };
 
 module.exports = Ng;

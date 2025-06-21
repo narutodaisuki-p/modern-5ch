@@ -13,15 +13,15 @@ const {validate,customJoi} = require('../middleware/validate');
 const Joi = require('joi');
 
 const threadSchema = Joi.object({
-  title: customJoi.string().trim().min(3).max(100).required(),
-  category: customJoi.string().trim().optional(),
-  content: customJoi.string().trim().min(1).required(),
-  nickname: customJoi.string().trim().min(1).max(50).optional(), // ニックネームの長さを適切に設定
+  title: customJoi.string().escapeHTML().trim().min(3).max(100).required(),
+  category: customJoi.string().escapeHTML().trim().optional(),
+  content: customJoi.string().escapeHTML().trim().min(1).required(),
+  nickname: customJoi.string().escapeHTML().trim().min(1).max(50).optional(), // ニックネームの長さを適切に設定
 });
 
 const postSchema = Joi.object({
-  content: customJoi.string().trim().min(1).required(),
-  name: customJoi.string().trim().optional(),
+  content: customJoi.string().escapeHTML().trim().min(1).required(),
+  name: customJoi.string().escapeHTML().trim().optional(),
 });
 
 const threadIdSchema = Joi.object({
@@ -83,7 +83,7 @@ router.post('/', postLimiter, validate(threadSchema), async (req, res, next) => 
             category: req.body.category || 'general',
             createdAt: new Date(),
             lastPostAt: new Date(),
-            imageUrl: imageUrl // 画像URLを保存
+            imageUrl: imageUrl, // 画像URLを保存
         });
         const newThread = await thread.save();
 

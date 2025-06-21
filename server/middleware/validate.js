@@ -6,7 +6,7 @@ const customJoi = Joi.extend((joi) => ({
   type: 'string',
   base: joi.string(),
   messages: {
-    'string.escapeHTML': '{{#label}} must not contain HTML tags or attributes.',
+    'string.escapeHTML': '{{#label}} xssしてくんなよ入力値: {{#value}}',
   },
   rules: {
     escapeHTML: {
@@ -30,7 +30,7 @@ const validate = (schema) => {
     if (error) {
       return next(new AppError(error.details[0].message, 400));
     }
-    next();
+    return next();
   };
 };
 

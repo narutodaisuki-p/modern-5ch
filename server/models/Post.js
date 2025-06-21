@@ -7,6 +7,7 @@ const postSchema = new Schema({
   number: { type: Number, required: true ,index: true},
   content: { type: String, required: true },
   name: { type: String, default: '名無しさん' },
+  userId: { type: Schema.Types.ObjectId, ref: 'User', default: null }, // 追記: 投稿者のユーザーID
   createdAt: { type: Date, default: Date.now },
   imageUrl: { type: String, default: null },
   imagePath: { type: String, default: null },
