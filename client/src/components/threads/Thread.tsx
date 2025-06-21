@@ -32,55 +32,60 @@ interface Post {
   threadId?: number;
   imageUrl?: string;
   name?: string; // 投稿者名フィールドを追加
+  userId?: string; // 追記: 投稿者のユーザーID
 }
 
-const PostItem = React.memo(({ post, onReport }: { post: Post; onReport: (id: number, content: string) => void }) => ( // content引数を追加
-  <Paper sx={{ p: 2, mb: 2 }}>
-    <Typography variant="body2" color="text.secondary" gutterBottom>
-      {post.number}. {post.name || '名無しさん'} - {new Date(post.createdAt).toLocaleString()}
-    </Typography>
-    <Typography variant="body1">{post.content}</Typography>
-    {post.imageUrl && (
-      <img
-        src={post.imageUrl}
-        alt="Post"
-        style={{ maxWidth: '100%', marginTop: '10px' }}
-      />
-    )}
-    <button
-      style={{
-        background: 'transparent',
-        color: '#b71c1c',
-        border: '1px solid #e57373',
-        borderRadius: '4px',
-        fontSize: '0.8rem',
-        width: '38px', // 余裕を持たせる
-        height: '26px',
-        minWidth: 0,
-        minHeight: 0,
-        padding: '1px 0', // 横paddingを減らす
-        marginLeft: '8px',
-        cursor: 'pointer',
-        fontFamily: '"Noto Sans JP", "Noto Sans", monospace',
-        opacity: 0.7,
-        transition: 'background 0.2s, color 0.2s, opacity 0.2s',
-        letterSpacing: '0.05em',
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
-        textAlign: 'center',
-        boxSizing: 'border-box',
-      }}
-      onMouseOver={e => (e.currentTarget.style.opacity = '1')}
-      onMouseOut={e => (e.currentTarget.style.opacity = '0.7')}
-      onFocus={e => (e.currentTarget.style.opacity = '1')}
-      onBlur={e => (e.currentTarget.style.opacity = '0.7')}
-      onClick={() => onReport(post._id, post.content)}
-      aria-label="投稿を報告"
-    >
-      報告
-    </button>
-  </Paper>
-));
+const PostItem = React.memo(({ post, onReport, currentUserId }: { post: Post; onReport: (id: number, content: string) => void; currentUserId: string | null | undefined }) => { // content引数を追加, currentUserId を props に追加
+  const isOwnPost = post.userId && currentUserId && post.userId === currentUserId;
+
+  return (
+    <Paper sx={{ p: 2, mb: 2, backgroundColor: isOwnPost ? 'rgba(255, 0, 0, 0.05)' : undefined }}> {/* 自分の投稿であれば背景色を薄い赤に */}
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        {post.number}. <span style={{ color: isOwnPost ? 'red' : undefined }}>{post.name || '名無しさん'}</span> - {new Date(post.createdAt).toLocaleString()} {/* 自分の投稿であれば名前を赤字に */}
+      </Typography>
+      <Typography variant="body1" sx={{ color: isOwnPost ? 'darkred' : undefined }}>{post.content}</Typography> {/* 自分の投稿であれば本文を濃い赤に */}
+      {post.imageUrl && (
+        <img
+          src={post.imageUrl}
+          alt="Post"
+          style={{ maxWidth: '100%', marginTop: '10px' }}
+        />
+      )}
+      <button
+        style={{
+          background: 'transparent',
+          color: '#b71c1c',
+          border: '1px solid #e57373',
+          borderRadius: '4px',
+          fontSize: '0.8rem',
+          width: '38px', // 余裕を持たせる
+          height: '26px',
+          minWidth: 0,
+          minHeight: 0,
+          padding: '1px 0', // 横paddingを減らす
+          marginLeft: '8px',
+          cursor: 'pointer',
+          fontFamily: '"Noto Sans JP", "Noto Sans", monospace',
+          opacity: 0.7,
+          transition: 'background 0.2s, color 0.2s, opacity 0.2s',
+          letterSpacing: '0.05em',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textAlign: 'center',
+          boxSizing: 'border-box',
+        }}
+        onMouseOver={e => (e.currentTarget.style.opacity = '1')}
+        onMouseOut={e => (e.currentTarget.style.opacity = '0.7')}
+        onFocus={e => (e.currentTarget.style.opacity = '1')}
+        onBlur={e => (e.currentTarget.style.opacity = '0.7')}
+        onClick={() => onReport(post._id, post.content)}
+        aria-label="投稿を報告"
+      >
+        報告
+      </button>
+    </Paper>
+  );
+});
 
 const Thread: React.FC = () => {
   const { threadId } = useParams<{ threadId: string }>();
@@ -213,7 +218,7 @@ const Thread: React.FC = () => {
       };
       reader.readAsDataURL(selectedFile);
     } else {
-      socket.emit('newPost', { threadId, content: newPost, name: nameToSend });
+      socket.emit('newPost', { threadId, content: newPost, name: nameToSend , token: localStorage.getItem('jwt') });
       setNewPost('');
     }
   };
@@ -254,9 +259,9 @@ const Thread: React.FC = () => {
 
   return (
     <Box>
-      <Dialog 
-        open={openDialog && !user} 
-        disableEscapeKeyDown 
+      <Dialog
+        open={openDialog && !user}
+        disableEscapeKeyDown
         onClose={(event, reason) => {
           if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
             return;
@@ -294,16 +299,18 @@ const Thread: React.FC = () => {
       {errorState && <ErrorIs message={errorState} />}
       {loadingState && <Typography variant="h6">読み込み中...</Typography>}
       <Typography variant="h4" gutterBottom>
-        スレッド {user ? `(${user.name}として参加中)` : '(匿名で参加中)'}
+        スレッド {user ? `(${user.name}として参加中)` : `(匿名で参加中)名前は ${nickname}`}
       </Typography>
       
 
       <Box mb={4}>
         {posts.map((post) => (
+          console.log(post,"はろー"), // デバッグ用
           <PostItem
             key={post._id}
             post={post}
             onReport={() => memoizedOnReport(post._id, post.content)}
+            currentUserId={user?._id} // ログインユーザーのIDを渡す
           />
         ))}
       </Box>
@@ -345,7 +352,7 @@ const Thread: React.FC = () => {
           </Box>
         )}
 
-        <NinjaHackerButton type="submit" label="投稿する" variant="outlined" color="primary" sx={{ fontFamily: '"Noto Sans JP", "Noto Sans", monospace' }} />
+        <NinjaHackerButton type="submit" label="投稿する" variant="outlined" color="primary" sx={{ fontFamily: '"Noto Sans JP", "Noto Sans", monospace' }}  />
       </Paper>
     </Box>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Box } from '@mui/material';
 import { TextField, Button, Typography, Container } from '@mui/material';
@@ -10,7 +10,7 @@ const URL = process.env.REACT_APP_API_URL;
 
 const Login = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { setIsLoggedIn,setUser } = useAppContext();
+  const { setIsLoggedIn,setUser,user } = useAppContext();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -118,7 +118,8 @@ const Login = () => {
           email: data.user.email,
           picture: data.user.picture, // Googleからのプロフィール画像URL
         });
-        
+        // console.log('Google Login Success:', data);
+        // window.location.reload(); // ページをリロードして状態を更新
       })
       .catch((error) => {
         console.error('Googleログインエラー:', error);
