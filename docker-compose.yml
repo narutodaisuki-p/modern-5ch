@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    ports:
+      - "5000:5000"
+    container_name: japan-server
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - app-network
+    volumes:
+      - ./server/uploads:/app/uploads
+
+networks:
+  app-network:
+    driver: bridge

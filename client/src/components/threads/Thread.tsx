@@ -237,7 +237,7 @@ const Thread: React.FC = () => {
         setTimeout(() => setErrorState(null), 1000); 
         throw new Error(`通報の送信に失敗しました: ${errorData.message}`);
       }
-
+      // 通報成功時の処理
       setPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
       alert('通報が送信されました');
     } catch (error) {
@@ -248,8 +248,8 @@ const Thread: React.FC = () => {
         setErrorState('通報処理中に不明なエラーが発生しました。');
       }
     }
-  }, [threadId]); // setErrorStateを依存配列に追加した方が良いが、今回は省略
-
+  }, [threadId, setErrorState]); 
+  // useCallbackでメモ化して、依存関係にhandleReportを追加
   const memoizedOnReport = useCallback((postId: number, content: string) => {
     handleReport(postId, content);
   }, [handleReport]);

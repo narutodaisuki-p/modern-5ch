@@ -53,4 +53,5 @@ userSchema.methods.isTokenValid = function (token) {
   }
 };
 
+
 module.exports = mongoose.model('User', userSchema);
