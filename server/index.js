@@ -37,7 +37,7 @@ const Category = require('./models/Category'); // カテゴリモデルをイン
 const CategoryRoutes = require('./Routes/categories');
 const ThreadRoutes = require('./Routes/threads');
 // const ShopRoutes = require('./Routes/shop'); // ショップ関連のルートをインポート
-const { postLimiter, globalLimiter } = require('./middleware/rateLimiter'); // レートリミッターをインポート
+const { globalLimiter } = require('./middleware/rateLimiter'); // レートリミッターをインポート
 
 
 const allowedOrigins = [
@@ -51,8 +51,24 @@ const allowedOrigins = [
 // multerの設定
 const upload = multer({
   storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    // 許可する画像のMIMEタイプ
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp'
+    ];
+    
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      return cb(new AppError('サポートされていない画像形式です。JPEG, PNG, GIF, WebPのみ許可されています。', 415), false);
+    }
+    cb(null, true);
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  }
 });
-
 
 // ミドルウェアの設定
 app.use(cors({
@@ -60,6 +76,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(upload.single('image')); // 画像アップロード用のフィールド名を指定
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -152,7 +169,6 @@ app.use((err, req, res, next) => {
 
 
 // Socket.IOの設定
-
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -163,6 +179,7 @@ const io = new Server(server, {
 });
 
 const { customJoi } = require('./middleware/validate');
+const { validateBase64Image } = require('./middleware/imageValidate');
 
 // Socket.IO用の投稿バリデーションスキーマ
 const socketPostSchema = customJoi.object({
@@ -201,11 +218,20 @@ io.on('connection', (socket) => {
   socket.on('newPost', async (data) => {
     // Joi+sanitize-htmlバリデーション
     const { error, value } = socketPostSchema.validate(data);
-    console.log('Received newPost data:', value);
     if (error) {
       socket.emit('postError', error.details[0].message);
       return;
     }
+    
+    // 画像バリデーション
+    if (value.image) {
+      const imageValidation = validateBase64Image(value.image);
+      if (!imageValidation.valid) {
+        socket.emit('postError', imageValidation.message);
+        return;
+      }
+    }
+    
     // レートリミット
     if (!checkSocketPostLimit(socket)) {
       socket.emit('postError', '投稿が多すぎます。しばらく時間をおいてから再試行してください。');
@@ -289,8 +315,9 @@ io.on('connection', (socket) => {
               console.log(`Nickname '${nicknameToSave}' added to thread ${value.threadId}`);
             }
           } catch (err) {
-            console.error('Error saving nickname to thread userNicknames array:', err);
-            // ニックネーム保存エラーは投稿処理全体を停止させない
+            console.error('Error saving nickname to thread:', err);
+            socket.emit('postError', 'ニックネームの保存中にエラーが発生しました');
+            return;
           }
         }
       }

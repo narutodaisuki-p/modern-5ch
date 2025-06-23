@@ -10,7 +10,7 @@ const AppError = require('../utils/Error');
       const categories = await Category.find();
       res.json(categories);
     } catch (err) {
-      next(AppError(err.message || 'カテゴリの取得に失敗しました', 500));
+      next(new AppError(err.message || 'カテゴリの取得に失敗しました', 500));
     }
   });
   router.get('/:categoryId/threads', async (req, res, next) => {

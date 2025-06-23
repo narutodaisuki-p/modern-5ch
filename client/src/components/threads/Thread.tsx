@@ -102,9 +102,6 @@ const Thread: React.FC = () => {
     if (!threadId) return;
 
     if (isLoggedIn && user) {
-      // ログインしている場合
-      // TODO: サーバーに保存されたスレッドニックネーム user.threadNicknames[threadId] を取得する
-      // 今はユーザーのデフォルト名を使用
       setNickname(user.name || 'ログインユーザー');
       setOpenDialog(false); // ログインしていればダイアログは不要
     } else {
@@ -331,8 +328,29 @@ const Thread: React.FC = () => {
         />
         <input
           type="file"
-          accept="image/*"
-          onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+          accept="image/jpeg, image/png, image/gif, image/webp"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              const file = e.target.files[0];
+              
+              // ファイルサイズのチェック (10MB)
+              if (file.size > 10 * 1024 * 1024) {
+                setErrorState('画像サイズが大きすぎます。最大10MBまでです。');
+                setTimeout(() => setErrorState(null), 3000);
+                return;
+              }
+              
+              // ファイル形式のチェック
+              const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+              if (!allowedTypes.includes(file.type)) {
+                setErrorState('サポートされていない画像形式です。JPEG, PNG, GIF, WebPのみ許可されています。');
+                setTimeout(() => setErrorState(null), 3000);
+                return;
+              }
+              
+              setSelectedFile(file);
+            }
+          }}
           style={{ display: 'block', marginBottom: '10px' }}
           aria-label="画像を選択"
         />

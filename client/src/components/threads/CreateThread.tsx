@@ -50,7 +50,22 @@ const CreateThread: React.FC = () => {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
+      const file = e.target.files[0];
+      
+      // ファイルサイズのチェック (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('画像サイズが大きすぎます。最大10MBまでです。');
+        return;
+      }
+      
+      // ファイル形式のチェック
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('サポートされていない画像形式です。JPEG, PNG, GIF, WebPのみ許可されています。');
+        return;
+      }
+      
+      setImage(file);
     }
   };
 

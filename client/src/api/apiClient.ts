@@ -120,6 +120,7 @@ export const validateAndSetAnonymousNickname = async (
     setNicknameState(nicknameToValidate);
     if (isInitialAttempt) {
         setOpenDialogState(true); // 初回は確認のためダイアログを開く
+        // ここでダイアログを開いて、ユーザーに確認を促す
     } else {
         setOpenDialogState(false); // ユーザーがダイアログで入力してOKだった場合は閉じる
     }
@@ -136,4 +137,3 @@ export const validateAndSetAnonymousNickname = async (
     return { isValid: false, message: errorMessage, nickname: nicknameToValidate };
   }
 };
-

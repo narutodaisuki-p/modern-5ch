@@ -10,6 +10,7 @@ const {auth, fileSizeLimiter} = require('../middleware/auth');
 const AppError = require('../utils/Error');
 const cloudinary = require('cloudinary').v2; // Cloudinaryをインポート
 const {validate,customJoi} = require('../middleware/validate');
+const {validateImage} = require('../middleware/imageValidate'); // 画像バリデーションをインポート
 const Joi = require('joi');
 
 const threadSchema = Joi.object({
@@ -48,7 +49,7 @@ router.get('/', async (req, res, next) => {
   });
   
   // 新しいスレッドを作成
-router.post('/', postLimiter, validate(threadSchema), async (req, res, next) => {
+router.post('/', postLimiter, validate(threadSchema), validateImage, async (req, res, next) => {
     console.log("スレッド作成リクエスト:", req.body);
     try {
         let imageUrl = null;
