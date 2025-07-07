@@ -15,8 +15,15 @@ const fileSizeLimiter = (req, res, next) => {
 const auth = async (req, res, next) => {
   try {
     console.log("authミドルウェア開始時のreq.params:", req.params);
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    console.log("authミドルウェア内のトークン:", token);
+    
+    // トークン取得 (クッキー > Authorization ヘッダー)
+    let token = req.cookies.access_token;
+    
+    if (!token && req.header('Authorization')) {
+      token = req.header('Authorization').replace('Bearer ', '');
+    }
+    
+    console.log("authミドルウェア内のトークン:", token ? "存在します" : "存在しません");
     if (!token) {
       return next(new AppError('認証トークンが必要です', 401));
     }

@@ -7,7 +7,7 @@ services:
       dockerfile: ./server/Dockerfile
     ports:
       - "5000:5000"
-    container_name: japan-server
+    container_name: jappan-server
     restart: unless-stopped
     env_file:
       - ./.env

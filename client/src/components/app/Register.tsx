@@ -11,54 +11,29 @@ const URL = process.env.REACT_APP_API_URL;
 
 interface RegisterGoogleResponse {
   message: string;
-  token?: string;
+  accessToken?: string;
+  refreshToken?: string;
   user?: {
     _id: string;
-    username: string;
+    name: string;
     email: string;
     picture?: string;
+    rank?: string;
   };
 }
 
 
 const Register = () => {
-
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { setIsLoggedIn, setUser } = useAppContext();
-  useEffect(() => {
-    const verifyToken = async () => {
-      const jwt = localStorage.getItem('jwt');
-      if (!jwt) return;
+  const { setIsLoggedIn, setUser,isLoggedIn } = useAppContext();
 
-      setLoading(true);
-      try {
-        const response = await fetch(`${URL}/auth/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: jwt }),
-        });
-
-        if (!response.ok) {
-          throw new Error('認証に失敗しました');
-        }
-
-        const data = await response.json();
-        setIsAuthenticated(true);
-        setIsLoggedIn(true);
-      } catch (error: any) {
-        console.error('認証エラー:', error);
-        setError(error.message);
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    verifyToken();
-  }, []);
+  // ログインしているなら
+  if (isLoggedIn) {
+    return <Navigate to="/profile" replace />;
+  }
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     setLoading(true);
@@ -70,6 +45,7 @@ const Register = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: credentialResponse.credential }),
+        credentials: 'include' // クッキーを含める
       });
 
       if (!res.ok) {
@@ -79,12 +55,14 @@ const Register = () => {
 
       const data: RegisterGoogleResponse = await res.json();
       setSuccessMessage(data.message || 'Google登録成功');
-      if (data.token) localStorage.setItem('jwt', data.token);
+      
+      // クッキーは自動的に設定されるため、ローカルストレージは不要
+      
       console.log('Google登録成功:', data);
       if (data.user) {
         setUser({
           _id: data.user._id,
-          name: data.user.username, // username を name にマッピング
+          name: data.user.name,
           email: data.user.email,
           picture: data.user.picture, // Googleからのプロフィール画像URL
         });
@@ -124,13 +102,13 @@ const Register = () => {
       setError('有効なメールアドレスを入力してください');
       return;
     }
-
     setLoading(true);
     try {
       const res = await fetch(`${URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),
+        credentials: 'include' // クッキーを含める
       });
 
       if (!res.ok) {
@@ -140,8 +118,11 @@ const Register = () => {
 
       const data: RegisterGoogleResponse = await res.json();
       setSuccessMessage(data.message || '登録成功');
-      if (data.token) localStorage.setItem('jwt', data.token);
+      
+      // クッキーは自動的に設定されるため、ローカルストレージは不要
+      
       setIsLoggedIn(true);
+      setIsAuthenticated(true);
     } catch (err: any) {
       setError(err.message || '登録に失敗しました');
     } finally {

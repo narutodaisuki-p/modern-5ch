@@ -15,11 +15,11 @@ const AppError = require('../utils/Error');
   });
   router.get('/:categoryId/threads', async (req, res, next) => {
     try {
-      const { categoryId } = req.params;
+      const { categsearchoryId } = req.params;
       const { search, sort, startDate, endDate } = req.query;
 
       // 基本クエリ: カテゴリ指定
-      let query = { category: categoryId };
+      let query = { category: categsearchoryId };
       // キーワード検索
       if (search) {
         query.$or = [
@@ -55,11 +55,11 @@ router.get('/:categoryId', async (req, res, next) => {
     try {
       const category = await Category.findById(req.params.categoryId);
       if (!category) {
-        return next(AppError('Category not found', 404));
+        return next(new AppError('Category not found', 404));
       }
       res.json(category);
     } catch (err) {
-      next(AppError(err.message || 'カテゴリの取得に失敗しました', 500));
+      next(new AppError(err.message || 'カテゴリの取得に失敗しました', 500));
     }
   
   });

@@ -27,7 +27,7 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppProvider: React.FC<{
   children: React.ReactNode;
   categoryId?: string;
-}> = ({ children, categoryId })  => {
+}> = ({ children, categoryId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
@@ -36,7 +36,12 @@ export const AppProvider: React.FC<{
 
   useEffect(() => {
     const fetchCategory = async () => {
+    // カテゴリIDが未指定の場合は何もしない
+      if (!categoryId) {
+        return;
+      }
       try {
+        console.log('カテゴリID:', categoryId);
         setLoading(true);
         if (!categoryId) {
           setCategory(null);
@@ -58,46 +63,37 @@ export const AppProvider: React.FC<{
   }, [categoryId]);
 
   useEffect(() =>{
-    const token = localStorage.getItem('jwt');
-    if (token) {
-      fetch(`${URL}/auth/verify`, { // fetchの戻り値を直接使わない
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ token }),
-      })
-      .then(async res => { // async を追加してレスポンスボディの処理を待つ
-        if (!res.ok) {
-          localStorage.removeItem('jwt');
-          setUser(null); // 認証失敗時はユーザー情報もクリア
-          setIsLoggedIn(false);
-          // エラーメッセージをセットする前にレスポンスボディを試みる
-          try {
-            const errorData = await res.json();
-            setError(errorData.message || res.statusText);
-          } catch (e) {
-            setError(res.statusText);
-          }
-          return; // 早期リターン
+    const checkAuth = async () => {
+      try {
+        setLoading(true);
+        // まずクッキーベースの認証をチェック
+        const res = await fetch(`${URL}/auth/verify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+          credentials: 'include', // クッキーを含める
+        })
+        // レスポンスが200 OKなら認証成功
+        if (res.ok) {
+          // クッキー認証成功
+          const userData = await res.json();
+          setUser(userData.user);
+          setIsLoggedIn(true);
+          setLoading(false);
+          return;
         }
-        const userData = await res.json(); // レスポンスからユーザーデータを取得
-        setUser(userData.user); // ユーザー情報をセット (APIのレスポンス形式に合わせる)
-        setIsLoggedIn(true);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('認証エラー:', err);
         setError('認証に失敗しました。再度ログインしてください。');
-        localStorage.removeItem('jwt'); // エラー時もトークン削除
         setUser(null);
         setIsLoggedIn(false);
-      });
-    } else {
-      // トークンがない場合はログアウト状態
-      setUser(null);
-      setIsLoggedIn(false);
-    }
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
   }, []);
 
   return (
@@ -110,7 +106,7 @@ export const AppProvider: React.FC<{
 export const useAppContext = (): AppContextProps => {
   const context = useContext(AppContext);
   if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider');
+    throw new Error('アッププロバイダーでラップされていません。useAppContextをAppProviderの子コンポーネントで使用してください。');
   }
   return context;
 };

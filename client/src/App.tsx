@@ -6,7 +6,7 @@ import {
 } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Container } from '@mui/material';
+import { Container, Button } from '@mui/material';
 import ThreadList from './components/threads/ThreadList';
 import Thread from './components/threads/Thread';
 import CreateThread from './components/threads/CreateThread';
@@ -14,7 +14,7 @@ import CategoryList from './components/categories/CategoryList';
 import { AppProvider } from './context/Appcontext';
 import CategoryLayout from './components/categories/CategoryLayout';
 import Category from './components/categories/Category';
-import Navba from './components/common/Navba';
+import Navbar from './components/common/Navba';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 // import PurchasePage from './shops/PurchasePage'; // 購入ページのインポート
@@ -27,7 +27,6 @@ import Terms from './components/app/Terms';
 import NotFound from './components/common/NotFound';
 import Footer from './components/common/Footer'; // フッターのインポート
 import PrivateRoute from './components/common/PrivateRoute';
-
 const theme = createTheme({
   palette: {
     mode: 'dark',
@@ -133,10 +132,15 @@ function MainContent() {
         <Route path='/login' element={<Login />}></Route>
         <Route path='/register' element={<Register />}></Route>
         <Route path='/terms' element={<Terms />}></Route>
-        {/* プロフィールは認証ガード付き */}
+        
+        {/* 購入ページのルート */}
+        {/* <Route path="/purchase" element={<PurchasePage />} /> */}
+        
+        {/* 認証が必要なルート */}
         <Route element={<PrivateRoute />}>
           <Route path='/profile' element={<Profile />} />
         </Route>
+     
         {/* カテゴリ関連は Layout を使用 */}
         <Route element={<CategoryLayout />}>
           <Route path="/categories/:categoryId" element={<Category />} />
@@ -155,7 +159,7 @@ function App() {
       <CssBaseline />
       <Router>
         <AppProvider>
-          <Navba /> 
+          <Navbar /> 
           <MainContent />
           <Footer /> 
         </AppProvider>

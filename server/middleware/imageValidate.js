@@ -46,7 +46,7 @@ const validateBase64Image = (base64String) => {
   const base64Data = base64String.split(',')[1];
   const fileSize = Buffer.from(base64Data, 'base64').length;
   const maxSize = 15 * 1024 * 1024; // 15MB
-
+  // 実際は、Base64エンコードされたデータは元のサイズの約1.33倍になるため、ここでは15MBを超えるときは20MBを超えることになります。
   if (fileSize > maxSize) {
     return {
       valid: false,

@@ -90,13 +90,10 @@ const CreateThread: React.FC = () => {
         formData.append('nickname', nickname);
         
       } else {
-        const token = localStorage.getItem('jwt');
            
          const response = await fetch(`${URL}/auth/profile`, {
                     method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
+                    credentials: 'include' // クッキーを含める
           });
         if (!response.ok) {
           throw new Error('ユーザー情報の取得に失敗しました');
@@ -153,9 +150,7 @@ const CreateThread: React.FC = () => {
       {loading && <Loading />}
 
       {!loading && !error && !categories && (
-        <Typography variant="body1" color="#26c6da" sx={{ textAlign: 'center', mb: 2, fontWeight: 700 }}>
-          カテゴリを読み込んでいます...
-        </Typography>
+        <Loading ></Loading>
       )}
 
       <Paper
@@ -319,7 +314,6 @@ const CreateThread: React.FC = () => {
               onChange={handleImageChange}
               accept="image/*"
             />
-
           </Button>
         </Box>
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2 }}>

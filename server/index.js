@@ -10,7 +10,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 const multer = require('multer');
 const helmet = require('helmet');
-const Joi = require('joi');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
@@ -18,6 +17,8 @@ const Post = require('./models/Post');
 const Thread = require('./models/Thread');
 const User = require('./models/User');
 
+// セキュリティ設定をインポート
+const { getHelmetConfig} = require('./config/security');
 
 // Cloudinaryの設定
 cloudinary.config({
@@ -70,30 +71,24 @@ const upload = multer({
   }
 });
 
+// cookie-parser をインポート
+const cookieParser = require('cookie-parser');
+
 // ミドルウェアの設定
 app.use(cors({
   origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // クッキーを許可
 }));
 
 app.use(upload.single('image')); // 画像アップロード用のフィールド名を指定
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(helmet(
-  {
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com'],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com'],
-        imgSrc: ["'self'", 'data:', 'https://res.cloudinary.com'],
-        connectSrc: ["'self'", ...allowedOrigins], // APIのドメインを追加
-      },
-    },
-  }
-));
-app.set('trust proxy', 1); // リバースプロキシを信頼
+app.use(cookieParser(process.env.COOKIE_SECRET || 'modern-5ch-cookie-secret')); // クッキーパーサーを追加
+// Helmetセキュリティ設定を適用
+app.use(helmet(getHelmetConfig(allowedOrigins)));
+app.set('trust proxy', "loopback"); // リバースプロキシを信頼
 
 // MongoDBの接続
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/modern-5ch', {
@@ -146,8 +141,29 @@ initializeCategories().catch((error) => console.error(error));
 app.use(globalLimiter); // グローバルなレートリミッターを適用
 
 
+// 実際のクライアントIP取得のヘルパー関数
+function getRealClientIP(req) {
+  return req.headers['x-forwarded-for'] ||
+         req.headers['x-real-ip'] || 
+         req.headers['cf-connecting-ip'] ||
+         req.connection.remoteAddress ||
+         req.socket.remoteAddress ||
+         req.ip ||
+         'unknown';
+}
+
+// Socket.IO用のIP取得関数
+function getSocketClientIP(socket) {
+  return socket.handshake.headers['x-forwarded-for'] ||
+          socket.handshake.headers['x-real-ip'] || 
+          socket.handshake.headers['cf-connecting-ip'] ||
+          socket.handshake.address ||
+          'unknown';
+}
+
 // ルートの設定
 app.use('/auth', auth); // 認証関連のルートを使用
+app.use('/auth/refresh', require('./Routes/refreshToken')); // リフレッシュトークンルートを追加
 app.use('/api/categories', CategoryRoutes);
 app.use('/api/threads', ThreadRoutes); // スレッド関連のルートを使用
 // app.use('/api/shop', ShopRoutes); // ショップ関連のルートを使用
@@ -175,6 +191,11 @@ const io = new Server(server, {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
+  },
+  cookie: {
+    httpOnly: true,
+    secure: false, // Nginxリバースプロキシ環境ではfalse
+    sameSite: 'strict'
   }
 });
 
@@ -193,13 +214,19 @@ const socketPostSchema = customJoi.object({
 
 // Socket.IO用の簡易レートリミット（IPごとに15分50回）
 const socketPostRateMap = new Map();
-const SOCKET_POST_LIMIT = 50;
-const SOCKET_POST_WINDOW = 15 * 60 * 1000;
+const SOCKET_POST_LIMIT = 50; // 15分あたりの投稿数制限
+const SOCKET_POST_WINDOW = 15 * 60 * 1000; // 15分
 
 function checkSocketPostLimit(socket) {
   const now = Date.now();
-  const ip = socket.handshake.address;
+  // 実際のクライアントIPを取得
+  const ip = getSocketClientIP(socket);
+  if (!ip) {
+    console.warn('Socket connection without a valid IP address');
+    return false; // IPが取得できない場合は制限をかけない
+  }
   let info = socketPostRateMap.get(ip);
+  console.log(`Checking post limit for IP: ${ip}, current info:`, info);
   if (!info || now - info.start > SOCKET_POST_WINDOW) {
     info = { count: 1, start: now };
   } else {
@@ -210,7 +237,17 @@ function checkSocketPostLimit(socket) {
 }
 
 io.on('connection', (socket) => {
-  console.log('Socket connected:', socket.id);
+  const clientIP = getSocketClientIP(socket);
+  console.log('Socket connected:', {
+    socketId: socket.id,
+    detectedIP: clientIP,
+    rawAddress: socket.handshake.address,
+    headers: {
+      'x-forwarded-for': socket.handshake.headers['x-forwarded-for'],
+      'x-real-ip': socket.handshake.headers['x-real-ip'],
+      'user-agent': socket.handshake.headers['user-agent']
+    }
+  });
   socket.on('joinThread', ({ threadId, name }) => {
     socket.join(`thread_${threadId}`);
     console.log(`User '${name || '名無しさん'}' joined thread ${threadId}`);
@@ -326,7 +363,7 @@ io.on('connection', (socket) => {
       if (value.threadId) { 
         await Thread.findByIdAndUpdate(
           value.threadId,
-          { $inc: { postCount: 1 }, lastPostAt: new Date() }, // 修正: カンマを追加
+          { $inc: { postCount: 1 }, lastPostAt: new Date() },
           { new: true }
         );
       }
@@ -344,3 +381,44 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// CSPレポートエンドポイント
+app.post('/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {
+  console.log('CSP Violation Report:', JSON.stringify(req.body, null, 2));
+  
+  // 本番環境では適切なログシステムに送信
+  if (isProduction) {
+    // TODO: ログシステム（Sentry、CloudWatch など）に送信
+    // 例: Sentry.captureException(new Error('CSP Violation'), { extra: req.body });
+    
+  }
+  
+  res.status(204).send();
+});
+
+// セキュリティヘッダーのテスト用エンドポイント
+app.get('/security-test', (req, res) => {
+  res.json({
+    message: 'セキュリティヘッダーのテストエンドポイント',
+    headers: req.headers,
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// セキュリティヘッダーのテスト用URLを提供
+app.get('/security-test-urls', (req, res) => {
+
+  const hedar = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  const userAgent = req.headers['user-agent'];
+
+  res.json({
+    mozilla: 'https://observatory.mozilla.org/',
+    securityheaders: 'https://securityheaders.com/',
+    cspEvaluator: 'https://csp-evaluator.withgoogle.com/',
+    clientIP: getRealClientIP(req),
+    userAgent: userAgent,
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});

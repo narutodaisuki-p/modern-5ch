@@ -314,7 +314,12 @@ const Thread: React.FC = () => {
       <Typography variant="h5" gutterBottom>
         新しい投稿
       </Typography>
-      <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
+      <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2 }} onKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault(); // Shift + Enterで改行、Enterで送信
+          handleSubmit(e);
+        }
+      }}>
         <TextField
           fullWidth
           multiline
@@ -346,8 +351,7 @@ const Thread: React.FC = () => {
                 setErrorState('サポートされていない画像形式です。JPEG, PNG, GIF, WebPのみ許可されています。');
                 setTimeout(() => setErrorState(null), 3000);
                 return;
-              }
-              
+              }            
               setSelectedFile(file);
             }
           }}

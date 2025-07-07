@@ -2,7 +2,6 @@ import React, { use, useEffect, useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Box } from '@mui/material';
 import { TextField, Button, Typography, Container } from '@mui/material';
-import { Link } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import { useAppContext } from '../../context/Appcontext';
 ;
@@ -14,39 +13,39 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const jwt = localStorage.getItem('jwt');
-
-    if (jwt) {
-      fetch(`${URL}/auth/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: jwt })
+    // クッキーベースの認証をチェック
+    fetch(`${URL}/auth/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include' // クッキーを含める
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('認証に失敗しました');
+        }
+        return response.json();
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('認証に失敗しました');
-          }
-          return response.json();
-        })
-        .then((data) => {
-          console.log('認証成功:', data);
-          setIsAuthenticated(true); // 認証成功
-          setIsLoggedIn(true); // グローバルステートも更新
-        })
-        .catch((error) => {
-          console.error('認証エラー:', error);
-          setError(error.message);
-          setIsAuthenticated(false); // 認証失敗
-        });
-    }
+      .then((data) => {
+        console.log('認証成功:', data);
+        setIsAuthenticated(true); // 認証成功
+        setIsLoggedIn(true); // グローバルステートも更新
+        // ユーザー情報を設定
+        if (data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch((error) => {
+        console.error('認証エラー:', error);
+        setError(error.message);
+        setIsAuthenticated(false); // 認証失敗
+      });
   }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/profile" replace />;
   }
-
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -64,6 +63,7 @@ const Login = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ email, password }),
+      credentials: 'include' // クッキーを含める
     })
       .then((response) => {
         if (!response.ok) {
@@ -72,13 +72,13 @@ const Login = () => {
         return response.json();
       })
       .then((data) => {
-        localStorage.setItem('jwt', data.token); // JWTを保存
+        // クッキーは自動的に設定されるため、ローカルストレージは不要
         setIsAuthenticated(true); // 認証状態を更新
         setIsLoggedIn(true); // グローバルステートも更新
         if (data.user) {
           setUser({
             _id: data.user._id,
-            name: data.user.username,
+            name: data.user.name,
             email: data.user.email,
             picture: data.user.picture,
           });
@@ -90,7 +90,6 @@ const Login = () => {
         console.error('ログインエラー:', error);
         alert(error.message);
       });
-
     event.currentTarget.reset(); // フォームをリセット
   };
 
@@ -101,6 +100,7 @@ const Login = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ credential: credentialResponse.credential }),
+      credentials: 'include' // クッキーを含める
     })
       .then((response) => {
         if (!response.ok) {
@@ -109,17 +109,16 @@ const Login = () => {
         return response.json();
       })
       .then((data) => {
-        localStorage.setItem('jwt', data.token); // JWTを保存
+        // クッキーは自動的に設定されるため、ローカルストレージは不要
         setIsAuthenticated(true); // 認証状態を更新
         setIsLoggedIn(true); // グローバルステートも更新
         setUser({
           _id: data.user._id,
-          name: data.user.username, // username を name にマッピング
+          name: data.user.name,
           email: data.user.email,
           picture: data.user.picture, // Googleからのプロフィール画像URL
         });
-        // console.log('Google Login Success:', data);
-        // window.location.reload(); // ページをリロードして状態を更新
+        window.location.reload(); // ページをリロードして状態を更新
       })
       .catch((error) => {
         console.error('Googleログインエラー:', error);
@@ -128,7 +127,6 @@ const Login = () => {
   };
 
   return (
-    
     <Box sx={{ maxWidth: '400px', mx: 'auto', mt: 4 }}>
 
       <form onSubmit={handleSubmit}>
@@ -176,7 +174,7 @@ const Login = () => {
           <GoogleLogin
             onSuccess={handleGoogleLogin}
             onError={() => {
-              console.error('Google login failed');
+              console.error('googleログインに失敗しました'); 
             }}
           />
         </Box>

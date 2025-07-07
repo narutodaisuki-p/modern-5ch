@@ -1,6 +1,7 @@
-import React from 'react';
+import React, {useState}  from 'react';
 import { Button, ButtonProps } from '@mui/material';
 import SvgIcon from '@mui/material/SvgIcon';
+
 
 // サイバー忍者風の手裏剣＋グリッチエフェクトアイコン
 function NinjaHackerIcon(props: any) {
@@ -42,7 +43,7 @@ interface NinjaHackerButtonProps extends ButtonProps {
 
 const NinjaHackerButton: React.FC<NinjaHackerButtonProps> = ({ label, component = 'button', href, target, rel, startIcon, ...props }) => {
   // サイバー煙エフェクト用のstate
-  const [smoke, setSmoke] = React.useState(false);
+  const [smoke, setSmoke] = useState(false);
 
   // クリック時に煙を一瞬表示
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {

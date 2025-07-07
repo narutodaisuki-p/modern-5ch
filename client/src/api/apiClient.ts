@@ -1,7 +1,14 @@
 import axios from 'axios';
 import { threadId } from 'worker_threads';
+import { authAxios } from './authHelper';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+// 認証不要なAPI用のaxiosインスタンス
+const publicAxios = axios.create({
+  baseURL: API_URL,
+  withCredentials: true // クッキーを送受信
+});
 
 
 interface Thread {
@@ -19,7 +26,7 @@ interface NicknameValidationResult {
 
 export const createThread = (title: string, content: string, setLoading: (loading: boolean) => void, setError: (error: string | null) => void, navigate: (path: string) => void) => {
   setLoading(true);
-  axios.post(`${API_URL}/api/threads`, { title, content })
+  authAxios.post(`/api/threads`, { title, content })
     .then((response) => {
       console.log('スレッド作成成功:', response.data);
       setLoading(false);
@@ -34,7 +41,7 @@ export const createThread = (title: string, content: string, setLoading: (loadin
 
 export const fetchThreads = (setThreads: (threads: Thread[]) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
   setLoading(true);
-  axios.get(`${API_URL}/api/threads`)
+  publicAxios.get(`/api/threads`)
     .then((response) => {
       console.log('スレッド取得成功:', response.data);
       setThreads(response.data);
@@ -46,9 +53,9 @@ export const fetchThreads = (setThreads: (threads: Thread[]) => void, setLoading
       setLoading(false);
     });
 }
-export const  fetchPosts = (threadId: string, setPosts: (posts: any[]) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
+export const fetchPosts = (threadId: string, setPosts: (posts: any[]) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
   setLoading(true);
-  axios.get(`${API_URL}/api/threads/${threadId}/posts`)
+  publicAxios.get(`/api/threads/${threadId}/posts`)
     .then((response) => {
       console.log('投稿取得成功:', response.data);
       setPosts(response.data);
@@ -63,7 +70,7 @@ export const  fetchPosts = (threadId: string, setPosts: (posts: any[]) => void, 
 export const getCategories = async (setCategories:  (categories: any) => void, setLoading: (loading: boolean) => void, setError: (error: string | null) => void) => {
   setLoading(true);
   try {
-    const response = await axios.get(`${API_URL}/api/categories`);
+    const response = await publicAxios.get(`/api/categories`);
     setCategories(response.data);
   } catch (error) {
     setError('カテゴリの取得に失敗しました。もう一度お試しください。');
@@ -82,14 +89,13 @@ export const validateAndSetAnonymousNickname = async (
   isInitialAttempt: boolean = true // 初回試行かどうか
 ): Promise<NicknameValidationResult> => {
   try {
-    const response = await fetch(`${API_URL}/api/threads/${threadId}/checkNickname`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nickname: nicknameToValidate }),
+    const response = await publicAxios.post(`/api/threads/${threadId}/checkNickname`, {
+      nickname: nicknameToValidate
     });
-    const data = await response.json();
+    
+    const data = response.data;
 
-    if (!response.ok || !data.available) {
+    if (!data.available) {
       const errorMessage = data.message || 'このニックネームは使用できません。';
       setErrorState(errorMessage);
       setTimeout(() => setErrorState(null), 3000);
